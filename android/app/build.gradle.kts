@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.study_companion"
-    compileSdk = 33  // SDK 33 for better compatibility
+    compileSdk = 36  // Required by plugins: app_links, shared_preferences, etc.
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -26,7 +26,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
