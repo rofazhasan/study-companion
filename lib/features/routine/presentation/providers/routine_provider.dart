@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../data/models/routine_block.dart';
+import '../../data/models/daily_routine.dart';
 import '../../data/repositories/routine_repository.dart';
 
 part 'routine_provider.g.dart';

@@ -12,6 +12,7 @@ class PomodoroTimer extends Equatable {
 
   final String? focusIntent;
   final String? breakIntent;
+  final int? routineBlockId; // Link to routine block for auto-completion
 
   const PomodoroTimer({
     required this.remainingSeconds,
