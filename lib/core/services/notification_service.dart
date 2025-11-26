@@ -51,6 +51,8 @@ class NotificationService {
       when: endTime?.millisecondsSinceEpoch,
       color: Colors.deepPurple,
       subText: 'Stay Focused',
+      icon: 'ic_notification', // Use custom notification icon
+      largeIcon: const DrawableResourceAndroidBitmap('launcher_icon'), // Use app icon as large icon
     );
 
     final NotificationDetails platformChannelSpecifics =
