@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_companion/core/services/model_download_service.dart';
 import 'package:study_companion/features/ai_chat/presentation/providers/chat_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ModelDownloadScreen extends ConsumerStatefulWidget {
   const ModelDownloadScreen({super.key});
@@ -40,7 +41,56 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     });
   }
 
+  Future<bool> _requestPermissions() async {
+    // For Android 13+ (API 33+), we don't need storage permissions for app-specific directories
+    // For older versions, request storage permission
+    if (await Permission.storage.isGranted) {
+      return true;
+    }
+    
+    final status = await Permission.storage.request();
+    if (status.isGranted) {
+      return true;
+    } else if (status.isPermanentlyDenied) {
+      // Show dialog to open settings
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Storage Permission Required'),
+            content: const Text(
+              'Storage permission is required to download AI models. Please enable it in app settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  openAppSettings();
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        );
+      }
+      return false;
+    }
+    return false;
+  }
+
   Future<void> _downloadChatModel() async {
+    // Check permissions first
+    if (!await _requestPermissions()) {
+      setState(() {
+        _error = 'Storage permission denied. Cannot download models.';
+      });
+      return;
+    }
+
     setState(() {
       _isDownloadingChat = true;
       _error = null;
@@ -72,6 +122,14 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   }
 
   Future<void> _downloadEmbeddingModel() async {
+    // Check permissions first
+    if (!await _requestPermissions()) {
+      setState(() {
+        _error = 'Storage permission denied. Cannot download models.';
+      });
+      return;
+    }
+
     setState(() {
       _isDownloadingEmbedding = true;
       _error = null;
