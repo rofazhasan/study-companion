@@ -3,27 +3,25 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/data/isar_service.dart';
 import '../models/routine_block.dart';
 import '../models/daily_routine.dart';
+import '../models/mission.dart';
+import '../../../focus_mode/data/models/study_session.dart';
+import 'mission_repository.dart';
 
 part 'routine_repository.g.dart';
 
 @Riverpod(keepAlive: true)
+@Riverpod(keepAlive: true)
 RoutineRepository routineRepository(RoutineRepositoryRef ref) {
   final isarService = ref.watch(isarServiceProvider);
-  // We need to access the underlying Isar instance. 
-  // Since IsarService wraps it, we might need to expose it or add methods to IsarService.
-  // For now, let's assume we can add methods to IsarService or access _isar if we make it public.
-  // Actually, IsarService is the abstraction. We should add methods there or make _isar public.
-  // Let's check IsarService again. It has `late final Isar _isar`.
-  // We can't access it directly.
-  // We should probably add `getRoutineBlocks` to IsarService or make `isar` getter public.
-  // Let's assume we'll update IsarService to expose `isar` getter.
-  return RoutineRepository(isarService);
+  final missionRepo = ref.watch(missionRepositoryProvider);
+  return RoutineRepository(isarService, missionRepo);
 }
 
 class RoutineRepository {
   final IsarService _isarService;
+  final MissionRepository _missionRepository;
 
-  RoutineRepository(this._isarService);
+  RoutineRepository(this._isarService, this._missionRepository);
 
   Future<List<RoutineBlock>> getBlocksForDate(DateTime date) async {
     // Normalize date to midnight
@@ -72,20 +70,100 @@ class RoutineRepository {
     final block = await _isarService.db.routineBlocks.get(id);
     if (block != null) {
       block.isCompleted = !block.isCompleted;
+      
+      // INTEGRATION: Update Mission Progress & Analytics
+      if (block.isCompleted) {
+        await _updateMissionForBlock(block);
+        await _createManualSession(block);
+      } else {
+        // If unchecking, remove the linked session
+        if (block.linkedSessionId != null) {
+          await _deleteLinkedSession(block.linkedSessionId!);
+          block.linkedSessionId = null;
+        }
+      }
+      
       await updateBlock(block);
       await calculateDailyScore(block.date);
     }
   }
 
-  Future<void> setBlockCompletion(Id id, bool isCompleted) async {
+  Future<void> setBlockCompletion(Id id, bool isCompleted, {bool createSession = false}) async {
     final block = await _isarService.db.routineBlocks.get(id);
     if (block != null) {
       if (block.isCompleted != isCompleted) {
         block.isCompleted = isCompleted;
+        
+        // INTEGRATION: Update Mission Progress
+        if (isCompleted) {
+          await _updateMissionForBlock(block);
+          if (createSession) {
+            await _createManualSession(block);
+          }
+        } else {
+           // If unchecking, remove the linked session
+          if (block.linkedSessionId != null) {
+            await _deleteLinkedSession(block.linkedSessionId!);
+            block.linkedSessionId = null;
+          }
+        }
+        
         await updateBlock(block);
         await calculateDailyScore(block.date);
       }
     }
+  }
+
+  Future<void> _createManualSession(RoutineBlock block) async {
+    // Only create session for study-related blocks
+    if (block.type == BlockType.study || 
+        block.type == BlockType.homework || 
+        block.type == BlockType.revision) {
+      
+      // Prevent duplicate if already linked
+      if (block.linkedSessionId != null) return;
+
+      final session = StudySession()
+        ..startTime = DateTime.now().subtract(Duration(minutes: block.durationMinutes))
+        ..endTime = DateTime.now()
+        ..durationSeconds = block.durationMinutes * 60
+        ..phase = 'focus'
+        ..isCompleted = true
+        ..focusIntent = block.title ?? block.type.name
+        ..isDeepFocus = false // Manual ticks are considered normal focus
+        ..targetDuration = block.durationMinutes * 60;
+        
+      await _isarService.db.writeTxn(() async {
+        final id = await _isarService.db.studySessions.put(session);
+        block.linkedSessionId = id;
+        // Note: block update happens in caller
+      });
+    }
+  }
+  
+  Future<void> _deleteLinkedSession(int sessionId) async {
+    await _isarService.db.writeTxn(() async {
+      await _isarService.db.studySessions.delete(sessionId);
+    });
+  }
+  
+  Future<void> _updateMissionForBlock(RoutineBlock block) async {
+    // Generic study block count
+    if (block.type == BlockType.study || block.type == BlockType.homework || block.type == BlockType.revision) {
+      await _missionRepository.updateProgress(block.date, MissionType.studyBlocks, 1);
+    }
+    
+    // Revision specific
+    if (block.type == BlockType.revision) {
+      await _missionRepository.updateProgress(block.date, MissionType.revision, 1);
+    }
+    
+    // Focus time (approximate from block duration if manually ticked)
+    // Note: Focus Mode handles exact time separately. This is for manual ticks.
+    // We might want to avoid double counting if Focus Mode calls setBlockCompletion.
+    // However, setBlockCompletion is called by Focus Mode.
+    // Let's assume Focus Mode will ALSO call updateProgress for focusTime specifically.
+    // Here we only update block counts.
   }
 
   Future<void> calculateDailyScore(DateTime date) async {

@@ -8,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../providers/analytics_provider.dart';
 import '../../../focus_mode/data/models/study_session.dart';
+import '../../../settings/presentation/providers/user_provider.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -76,7 +77,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                         const Gap(24),
                         _buildSummaryCards(context, data),
                         const Gap(24),
-                        _buildAIInsightCard(context, insightAsync),
+                        _buildAIInsightCard(context, insightAsync, data),
                         const Gap(24),
                         Text(
                           _getChartTitle(data['filter'] as AnalyticsFilter),
@@ -145,39 +146,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SegmentedButton<AnalyticsFilter>(
-            segments: const [
-              ButtonSegment(
-                value: AnalyticsFilter.day,
-                label: Text('Today'),
-                icon: Icon(Icons.today, size: 18),
-              ),
-              ButtonSegment(
-                value: AnalyticsFilter.week,
-                label: Text('Week'),
-                icon: Icon(Icons.calendar_view_week, size: 18),
-              ),
-              ButtonSegment(
-                value: AnalyticsFilter.month,
-                label: Text('Month'),
-                icon: Icon(Icons.calendar_month, size: 18),
-              ),
-              ButtonSegment(
-                value: AnalyticsFilter.year,
-                label: Text('Year'),
-                icon: Icon(Icons.calendar_today, size: 18),
-              ),
-            ],
-            selected: {_selectedFilter},
-            onSelectionChanged: (Set<AnalyticsFilter> newSelection) {
-              setState(() {
-                _selectedFilter = newSelection.first;
-              });
-              ref.read(analyticsNotifierProvider.notifier).setFilter(_selectedFilter);
-            },
-          ),
+        Wrap(
+          spacing: 8,
+          children: [
+            _buildFilterChip(AnalyticsFilter.day, 'Today', Icons.today),
+            _buildFilterChip(AnalyticsFilter.week, 'Week', Icons.calendar_view_week),
+            _buildFilterChip(AnalyticsFilter.month, 'Month', Icons.calendar_month),
+            _buildFilterChip(AnalyticsFilter.year, 'Year', Icons.calendar_today),
+          ],
         ),
         const Gap(12),
         OutlinedButton.icon(
@@ -222,6 +198,23 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterChip(AnalyticsFilter filter, String label, IconData icon) {
+    final isSelected = _selectedFilter == filter;
+    return ChoiceChip(
+      label: Text(label),
+      avatar: Icon(icon, size: 18),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _selectedFilter = filter;
+          });
+          ref.read(analyticsNotifierProvider.notifier).setFilter(filter);
+        }
+      },
     );
   }
 
@@ -328,7 +321,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     );
   }
 
-  Widget _buildAIInsightCard(BuildContext context, AsyncValue<String> insightAsync) {
+  Widget _buildAIInsightCard(BuildContext context, AsyncValue<String> insightAsync, Map<String, dynamic> data) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -367,23 +360,32 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             ],
           ),
           const Gap(12),
-          insightAsync.when(
-            data: (text) => Text(
-              text,
+          if (data['totalFocusToday'] == 0 && data['filter'] == AnalyticsFilter.day)
+            Text(
+              "No sessions today. Start a focus session to get insights!",
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white.withOpacity(0.9),
                     height: 1.5,
                   ),
+            )
+          else
+            insightAsync.when(
+              data: (text) => Text(
+                text,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.5,
+                    ),
+              ),
+              loading: () => const LinearProgressIndicator(
+                color: Colors.white,
+                backgroundColor: Colors.white24,
+              ),
+              error: (_, __) => const Text(
+                'Could not generate insight. Configure AI model in Settings.',
+                style: TextStyle(color: Colors.white70),
+              ),
             ),
-            loading: () => const LinearProgressIndicator(
-              color: Colors.white,
-              backgroundColor: Colors.white24,
-            ),
-            error: (_, __) => const Text(
-              'Could not generate insight. Configure AI model in Settings.',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ),
         ],
       ),
     );
@@ -672,11 +674,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   ],
                 ),
               ),
-              const Gap(12),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Column(
+
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
@@ -698,6 +700,22 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                             'DEEP',
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        )
+                      else
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'NORMAL',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -877,6 +895,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
   Future<void> _exportToPDF(BuildContext context, Map<String, dynamic> data) async {
     final pdf = pw.Document();
+    final user = await ref.read(userNotifierProvider.future);
     
     final sessions = data['sessions'] as List<StudySession>;
     final totalToday = data['totalFocusToday'] as int;
@@ -920,13 +939,28 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
+        footer: (pw.Context context) {
+          return pw.Column(
+            children: [
+              pw.Divider(color: PdfColors.grey200),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Study Companion OS', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
+                  pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
+                ],
+              ),
+            ],
+          );
+        },
         build: (pw.Context context) {
           return [
-            // Header
+            // Modern Header
             pw.Container(
-              padding: const pw.EdgeInsets.only(bottom: 20),
-              decoration: const pw.BoxDecoration(
-                border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 1)),
+              padding: const pw.EdgeInsets.all(20),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.blue50,
+                borderRadius: pw.BorderRadius.circular(12),
               ),
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -934,93 +968,122 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Study Analytics Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-                      pw.SizedBox(height: 4),
-                      pw.Text(periodName, style: pw.TextStyle(fontSize: 16, color: PdfColors.grey700)),
-                      pw.Text(dateRange, style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey600)),
+                      pw.Text('STUDY REPORT', style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                      pw.SizedBox(height: 8),
+                      if (user != null) ...[
+                        pw.Text(user.name, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+                        pw.Text('${user.grade} • ${user.schoolName ?? ''}', style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
+                      ],
                     ],
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('Generated', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
-                      pw.Text(DateFormat('MMM d, y h:mm a').format(DateTime.now()), style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.white,
+                          borderRadius: pw.BorderRadius.circular(20),
+                          border: pw.Border.all(color: PdfColors.blue200),
+                        ),
+                        child: pw.Text(periodName, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                      ),
+                      pw.SizedBox(height: 8),
+                      pw.Text(dateRange, style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600)),
+                      pw.Text('Generated: ${DateFormat('MMM d, y h:mm a').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
                     ],
                   ),
                 ],
               ),
             ),
             
-            pw.SizedBox(height: 20),
+            pw.SizedBox(height: 30),
             
-            // Key Metrics
+            // Key Metrics Grid
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                _buildPdfMetricCard('Total Focus Time', _formatDuration(totalPeriod), PdfColors.blue100, PdfColors.blue800),
-                _buildPdfMetricCard('Avg. Daily Focus', averageDailyFocus, PdfColors.green100, PdfColors.green800),
-                _buildPdfMetricCard('Total Sessions', '${sessions.length}', PdfColors.purple100, PdfColors.purple800),
+                _buildPdfMetricCard('Total Focus Time', _formatDuration(totalPeriod), PdfColors.blue50, PdfColors.blue900),
+                _buildPdfMetricCard('Avg. Daily Focus', averageDailyFocus, PdfColors.green50, PdfColors.green900),
+                _buildPdfMetricCard('Total Sessions', '${sessions.length}', PdfColors.purple50, PdfColors.purple900),
               ],
             ),
             
-            pw.SizedBox(height: 24),
+            pw.SizedBox(height: 30),
             
-            // Session Details
-            pw.Text('Session Details', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+            // Session Details Table
+            pw.Text('SESSION DETAILS', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.grey600, letterSpacing: 1.2)),
             pw.SizedBox(height: 12),
             
             if (sessions.isEmpty)
               pw.Container(
-                padding: const pw.EdgeInsets.all(32),
+                padding: const pw.EdgeInsets.all(40),
                 alignment: pw.Alignment.center,
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.grey100,
-                  borderRadius: pw.BorderRadius.circular(8),
+                  color: PdfColors.grey50,
+                  borderRadius: pw.BorderRadius.circular(12),
+                  border: pw.Border.all(color: PdfColors.grey200),
                 ),
-                child: pw.Text('No sessions found for this period', style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey600)),
+                child: pw.Column(
+                  children: [
+                    pw.Text('No sessions recorded', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                    pw.SizedBox(height: 4),
+                    pw.Text('Start focusing to see your progress here.', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600)),
+                  ],
+                ),
               )
             else
               pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                border: pw.TableBorder.all(color: PdfColors.grey200, width: 0.5),
                 columnWidths: {
                   0: const pw.FlexColumnWidth(2), // Date
-                  1: const pw.FlexColumnWidth(2), // Time
+                  1: const pw.FlexColumnWidth(2.5), // Time
                   2: const pw.FlexColumnWidth(1.5), // Duration
                   3: const pw.FlexColumnWidth(3), // Intent
-                  4: const pw.FlexColumnWidth(1), // Type
+                  4: const pw.FlexColumnWidth(1.2), // Type
                 },
                 children: [
                   pw.TableRow(
-                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey100),
                     children: [
-                      _buildPdfTableHeader('Date'),
-                      _buildPdfTableHeader('Time'),
-                      _buildPdfTableHeader('Duration'),
-                      _buildPdfTableHeader('Focus Intent'),
-                      _buildPdfTableHeader('Type'),
+                      _buildPdfTableHeader('DATE'),
+                      _buildPdfTableHeader('TIME'),
+                      _buildPdfTableHeader('DURATION'),
+                      _buildPdfTableHeader('INTENT'),
+                      _buildPdfTableHeader('TYPE'),
                     ],
                   ),
-                  ...sessions.map((session) => pw.TableRow(
-                    children: [
-                      _buildPdfTableCell(DateFormat('MMM d').format(session.startTime)),
-                      _buildPdfTableCell('${DateFormat('h:mm a').format(session.startTime)} - ${session.endTime != null ? DateFormat('h:mm a').format(session.endTime!) : '?'}'),
-                      _buildPdfTableCell(_formatDuration(session.durationSeconds)),
-                      _buildPdfTableCell(session.focusIntent ?? '-'),
-                      _buildPdfTableCell(session.isDeepFocus ? 'DEEP' : 'Normal', isBold: session.isDeepFocus),
-                    ],
-                  )).toList(),
+                  ...sessions.map((session) {
+                    final isDeep = session.isDeepFocus;
+                    return pw.TableRow(
+                      decoration: const pw.BoxDecoration(
+                        border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey100)),
+                      ),
+                      children: [
+                        _buildPdfTableCell(DateFormat('MMM d').format(session.startTime), isBold: true),
+                        _buildPdfTableCell('${DateFormat('h:mm a').format(session.startTime)} - ${session.endTime != null ? DateFormat('h:mm a').format(session.endTime!) : '?'}'),
+                        _buildPdfTableCell(_formatDuration(session.durationSeconds)),
+                        _buildPdfTableCell(session.focusIntent ?? '-'),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: pw.BoxDecoration(
+                              color: isDeep ? PdfColors.purple50 : PdfColors.blue50,
+                              borderRadius: pw.BorderRadius.circular(4),
+                            ),
+                            child: pw.Text(
+                              isDeep ? 'DEEP' : 'Normal',
+                              style: pw.TextStyle(fontSize: 8, color: isDeep ? PdfColors.purple900 : PdfColors.blue900, fontWeight: pw.FontWeight.bold),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
                 ],
               ),
-              
-            // Footer
-            pw.SizedBox(height: 20),
-            pw.Divider(color: PdfColors.grey300),
-            pw.Center(
-              child: pw.Text(
-                'Study Companion OS', 
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)
-              ),
-            ),
           ];
         },
       ),

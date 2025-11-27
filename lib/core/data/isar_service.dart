@@ -14,6 +14,8 @@ import '../../features/routine/data/models/routine_block.dart';
 import '../../features/routine/data/models/daily_routine.dart';
 import '../../features/routine/data/models/habit.dart';
 import '../../features/routine/data/models/mission.dart';
+import '../../features/settings/data/models/user.dart';
+import '../../features/routine/data/models/exam.dart';
 
 part 'isar_service.g.dart';
 
@@ -42,6 +44,8 @@ class IsarService {
         DailyRoutineSchema,
         HabitSchema,
         DailyMissionSchema,
+        UserSchema,
+        ExamSchema,
       ],
       directory: dir.path,
     );
@@ -254,5 +258,22 @@ class IsarService {
 
   Future<List<ExamResult>> getExamResults() async {
     return await _isar.examResults.where().sortByDateDesc().findAll();
+  }
+
+  // User Profile
+  Future<void> saveUser(User user) async {
+    await _isar.writeTxn(() async {
+      await _isar.users.put(user);
+    });
+  }
+
+  Future<User?> getUser() async {
+    return await _isar.users.where().findFirst();
+  }
+
+  Future<void> updateUser(User user) async {
+    await _isar.writeTxn(() async {
+      await _isar.users.put(user);
+    });
   }
 }

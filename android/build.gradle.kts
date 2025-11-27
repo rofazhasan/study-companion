@@ -26,6 +26,7 @@ subprojects {
             if (project.name == "isar_flutter_libs") {
                 android.namespace = "dev.isar.isar_flutter_libs"
             }
+            android.compileSdkVersion = "android-34"
         }
     }
     configurations.all {

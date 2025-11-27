@@ -176,19 +176,25 @@ class _FocusScreenState extends ConsumerState<FocusScreen> with WidgetsBindingOb
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  SizedBox(
-                    width: 280,
-                    height: 280,
-                    child: CircularProgressIndicator(
-                      value: timerState.progress,
-                      strokeWidth: 12,
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        timerState.phase == TimerPhase.focus
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.tertiary,
-                      ),
-                    ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final size = constraints.maxWidth * 0.7;
+                      final timerSize = size > 280.0 ? 280.0 : size;
+                      return SizedBox(
+                        width: timerSize,
+                        height: timerSize,
+                        child: CircularProgressIndicator(
+                          value: timerState.progress,
+                          strokeWidth: 12,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            timerState.phase == TimerPhase.focus
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.tertiary,
+                          ),
+                        ),
+                      );
+                    }
                   ),
                   Column(
                     mainAxisSize: MainAxisSize.min,
@@ -244,9 +250,10 @@ class _FocusScreenState extends ConsumerState<FocusScreen> with WidgetsBindingOb
                   ),
                   const Gap(24),
                   IconButton.filledTonal(
-                    onPressed: () {
-                      // TODO: Implement settings or skip
-                    },
+                    onPressed: (timerState.isDeepFocusEnabled &&
+                            timerState.status == TimerStatus.running)
+                        ? null
+                        : timerNotifier.skip,
                     icon: const Icon(Icons.skip_next),
                     iconSize: 32,
                   ),

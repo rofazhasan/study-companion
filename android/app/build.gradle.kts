@@ -7,8 +7,9 @@ plugins {
 
 android {
     namespace = "com.example.study_companion"
-    compileSdk = 36  // Required by plugins: app_links, shared_preferences, etc.
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 34  // Required by plugins: app_links, shared_preferences, etc.
+    buildToolsVersion = "34.0.0"
+    // ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -26,7 +27,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -54,5 +55,5 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

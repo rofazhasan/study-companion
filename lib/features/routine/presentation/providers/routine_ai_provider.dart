@@ -38,7 +38,7 @@ Rules:
 1. Mix study blocks with short breaks.
 2. If mood is 'Tired', use shorter study blocks (25m) and more breaks.
 3. If mood is 'Energetic', use longer study blocks (50m).
-4. Output ONLY a JSON list of blocks. No other text.
+4. Output ONLY a valid JSON array. Do not include markdown formatting like ```json ... ```.
 5. Format: [{"title": "Math", "type": "study", "duration": 60, "start": "09:00"}, ...]
 Types: study, homework, revision, breakTime, personal.
 ''';
@@ -50,21 +50,34 @@ Types: study, homework, revision, breakTime, personal.
         fullResponse += chunk;
       }
 
-      // Parse Response (Basic cleanup to find JSON array)
-      final jsonStart = fullResponse.indexOf('[');
-      final jsonEnd = fullResponse.lastIndexOf(']');
-      
-      if (jsonStart != -1 && jsonEnd != -1) {
-        final jsonStr = fullResponse.substring(jsonStart, jsonEnd + 1);
-        final List<dynamic> data = jsonDecode(jsonStr);
+      print("AI Response: $fullResponse"); // Debug log
 
-        // Clear existing blocks for the day (optional, maybe ask user?)
-        // For now, we append or just add. Let's assume we want to fill the day.
-        // But to avoid duplicates if re-running, maybe we should clear?
-        // Let's just add them.
+      // Robust JSON extraction
+      String jsonStr = fullResponse.trim();
+      List<dynamic>? data;
+
+      // Attempt 1: Direct Decode
+      try {
+        data = jsonDecode(jsonStr);
+      } catch (_) {
+        // Attempt 2: Regex extraction
+        final jsonPattern = RegExp(r'\[\s*\{.*\}\s*\]', multiLine: true, dotAll: true);
+        final match = jsonPattern.firstMatch(fullResponse);
+        if (match != null) {
+          try {
+            data = jsonDecode(match.group(0)!);
+          } catch (e) {
+             print("Regex decode failed: $e");
+          }
+        }
+      }
+      
+      if (data != null) {
+        print("Parsed ${data.length} blocks from AI response");
         
         for (final item in data) {
           final startTimeStr = item['start'] as String;
+          // Handle "9:00" vs "09:00"
           final parts = startTimeStr.split(':');
           final hour = int.parse(parts[0]);
           final minute = int.parse(parts[1]);
@@ -78,7 +91,7 @@ Types: study, homework, revision, breakTime, personal.
           );
 
           final block = RoutineBlock()
-            ..date = date
+            ..date = DateTime(date.year, date.month, date.day)
             ..title = item['title']
             ..type = _parseType(item['type'])
             ..durationMinutes = item['duration']
@@ -86,18 +99,79 @@ Types: study, homework, revision, breakTime, personal.
             ..difficulty = TaskDifficulty.medium; // Default
 
           await repository.addBlock(block);
+          print("Added block: ${block.title} at $startTime");
         }
+        
+        // Verify blocks were saved
+        final savedBlocks = await repository.getBlocksForDate(date);
+        print("Verified: Found ${savedBlocks.length} blocks in DB for $date");
         
         // Refresh the UI
         ref.invalidate(dailyRoutineBlocksProvider);
+        print("Invalidated dailyRoutineBlocksProvider");
       } else {
-        throw Exception("Failed to generate valid schedule format");
+        throw Exception("Failed to find JSON array in response");
       }
 
       state = const AsyncValue.data(null);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      print("RoutineAI Error: $e");
+      // If AI fails (or returns non-JSON text), fallback to a basic template schedule
+      try {
+        print("Generating template schedule due to error...");
+        final repository = ref.read(routineRepositoryProvider);
+        await _generateTemplateSchedule(repository, date, subjects, totalHours);
+        print("Template schedule generated.");
+        state = const AsyncValue.data(null);
+      } catch (fallbackError, fallbackStack) {
+        print("Fallback Error: $fallbackError");
+        state = AsyncValue.error(e, st); // Return original error
+      }
     }
+  }
+
+  Future<void> _generateTemplateSchedule(
+    RoutineRepository repository, 
+    DateTime date, 
+    List<String> subjects, 
+    int totalHours
+  ) async {
+    // Basic template: 50m study, 10m break
+    final startTime = DateTime(date.year, date.month, date.day, 9, 0);
+    int minutesAdded = 0;
+    int subjectIndex = 0;
+
+    while (minutesAdded < totalHours * 60) {
+      // Study Block
+      if (subjects.isNotEmpty) {
+        final subject = subjects[subjectIndex % subjects.length];
+        await repository.addBlock(RoutineBlock()
+          ..date = date
+          ..title = "Study $subject"
+          ..type = BlockType.study
+          ..durationMinutes = 50
+          ..startTime = startTime.add(Duration(minutes: minutesAdded))
+          ..difficulty = TaskDifficulty.medium
+        );
+        minutesAdded += 50;
+        subjectIndex++;
+      }
+
+      // Break Block
+      if (minutesAdded < totalHours * 60) {
+        await repository.addBlock(RoutineBlock()
+          ..date = date
+          ..title = "Break"
+          ..type = BlockType.breakTime
+          ..durationMinutes = 10
+          ..startTime = startTime.add(Duration(minutes: minutesAdded))
+          ..difficulty = TaskDifficulty.easy
+        );
+        minutesAdded += 10;
+      }
+    }
+    
+    ref.invalidate(dailyRoutineBlocksProvider);
   }
 
   BlockType _parseType(String type) {

@@ -36,5 +36,12 @@ See [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed setup instructions and ver
 
 Your data belongs to you. All notes, sessions, and chat history are stored locally on your device. Cloud sync is strictly opt-in.
 
+## 👨‍💻 Developer
+
+**Md. Rofaz Hasan Rafiu**
+- [Facebook](https://www.facebook.com/rofazhasanrafiu/)
+- [GitHub](https://github.com/rofazhasan)
+- [LinkedIn](https://www.linkedin.com/in/md-rofaz-hasan-rafiu)
+
 ---
-*Built with ❤️ by Antigravity*
+*Built with ❤️ for students everywhere*

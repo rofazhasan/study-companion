@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../providers/mission_provider.dart';
+import 'mission_selection_dialog.dart';
 
 class MissionCard extends ConsumerWidget {
   final DateTime date;
@@ -100,24 +101,35 @@ class MissionCard extends ConsumerWidget {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: InkWell(
-                        onTap: () {
-                          ref.read(dailyMissionControllerProvider(date).notifier).toggleItem(index);
-                        },
+                        onTap: item.isManual 
+                            ? () => ref.read(dailyMissionControllerProvider(date).notifier).toggleItem(index)
+                            : null,
                         child: Row(
                           children: [
                             Icon(
-                              item.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
+                              item.isCompleted ? Icons.check_box : (item.isManual ? Icons.check_box_outline_blank : Icons.lock_clock),
                               color: item.isCompleted ? Colors.amberAccent : Colors.white54,
+                              size: 20,
                             ),
                             const Gap(12),
                             Expanded(
-                              child: Text(
-                                item.title,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  decoration: item.isCompleted ? TextDecoration.lineThrough : null,
-                                  decorationColor: Colors.white54,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      decoration: item.isCompleted ? TextDecoration.lineThrough : null,
+                                      decorationColor: Colors.white54,
+                                    ),
+                                  ),
+                                  if (!item.isManual && !item.isCompleted)
+                                    Text(
+                                      '${item.current}/${item.target}',
+                                      style: const TextStyle(color: Colors.white54, fontSize: 10),
+                                    ),
+                                ],
                               ),
                             ),
                             Container(
@@ -136,6 +148,20 @@ class MissionCard extends ConsumerWidget {
                       ),
                     );
                   }),
+                  const Gap(8),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (context) => MissionSelectionDialog(
+                          date: date,
+                          currentItems: mission.items,
+                        ),
+                      ),
+                      icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
+                      label: const Text('Edit Missions', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    ),
+                  ),
                 ],
               ),
             ),

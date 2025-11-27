@@ -48,23 +48,28 @@ const RoutineBlockSchema = CollectionSchema(
       name: r'isCompleted',
       type: IsarType.bool,
     ),
-    r'startTime': PropertySchema(
+    r'linkedSessionId': PropertySchema(
       id: 6,
+      name: r'linkedSessionId',
+      type: IsarType.long,
+    ),
+    r'startTime': PropertySchema(
+      id: 7,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'subjectName': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'subjectName',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'type',
       type: IsarType.string,
       enumMap: _RoutineBlocktypeEnumValueMap,
@@ -133,10 +138,11 @@ void _routineBlockSerialize(
   writer.writeLong(offsets[3], object.durationMinutes);
   writer.writeDateTime(offsets[4], object.endTime);
   writer.writeBool(offsets[5], object.isCompleted);
-  writer.writeDateTime(offsets[6], object.startTime);
-  writer.writeString(offsets[7], object.subjectName);
-  writer.writeString(offsets[8], object.title);
-  writer.writeString(offsets[9], object.type.name);
+  writer.writeLong(offsets[6], object.linkedSessionId);
+  writer.writeDateTime(offsets[7], object.startTime);
+  writer.writeString(offsets[8], object.subjectName);
+  writer.writeString(offsets[9], object.title);
+  writer.writeString(offsets[10], object.type.name);
 }
 
 RoutineBlock _routineBlockDeserialize(
@@ -154,11 +160,12 @@ RoutineBlock _routineBlockDeserialize(
   object.durationMinutes = reader.readLong(offsets[3]);
   object.id = id;
   object.isCompleted = reader.readBool(offsets[5]);
-  object.startTime = reader.readDateTime(offsets[6]);
-  object.subjectName = reader.readStringOrNull(offsets[7]);
-  object.title = reader.readStringOrNull(offsets[8]);
+  object.linkedSessionId = reader.readLongOrNull(offsets[6]);
+  object.startTime = reader.readDateTime(offsets[7]);
+  object.subjectName = reader.readStringOrNull(offsets[8]);
+  object.title = reader.readStringOrNull(offsets[9]);
   object.type =
-      _RoutineBlocktypeValueEnumMap[reader.readStringOrNull(offsets[9])] ??
+      _RoutineBlocktypeValueEnumMap[reader.readStringOrNull(offsets[10])] ??
           BlockType.study;
   return object;
 }
@@ -185,12 +192,14 @@ P _routineBlockDeserializeProp<P>(
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
+      return (reader.readStringOrNull(offset)) as P;
+    case 10:
       return (_RoutineBlocktypeValueEnumMap[reader.readStringOrNull(offset)] ??
           BlockType.study) as P;
     default:
@@ -857,6 +866,80 @@ extension RoutineBlockQueryFilter
   }
 
   QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
+      linkedSessionIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'linkedSessionId',
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
+      linkedSessionIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'linkedSessionId',
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
+      linkedSessionIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'linkedSessionId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
+      linkedSessionIdGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'linkedSessionId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
+      linkedSessionIdLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'linkedSessionId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
+      linkedSessionIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'linkedSessionId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterFilterCondition>
       startTimeEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1437,6 +1520,20 @@ extension RoutineBlockQuerySortBy
     });
   }
 
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterSortBy>
+      sortByLinkedSessionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedSessionId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterSortBy>
+      sortByLinkedSessionIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedSessionId', Sort.desc);
+    });
+  }
+
   QueryBuilder<RoutineBlock, RoutineBlock, QAfterSortBy> sortByStartTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'startTime', Sort.asc);
@@ -1577,6 +1674,20 @@ extension RoutineBlockQuerySortThenBy
     });
   }
 
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterSortBy>
+      thenByLinkedSessionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedSessionId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RoutineBlock, RoutineBlock, QAfterSortBy>
+      thenByLinkedSessionIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedSessionId', Sort.desc);
+    });
+  }
+
   QueryBuilder<RoutineBlock, RoutineBlock, QAfterSortBy> thenByStartTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'startTime', Sort.asc);
@@ -1667,6 +1778,13 @@ extension RoutineBlockQueryWhereDistinct
     });
   }
 
+  QueryBuilder<RoutineBlock, RoutineBlock, QDistinct>
+      distinctByLinkedSessionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'linkedSessionId');
+    });
+  }
+
   QueryBuilder<RoutineBlock, RoutineBlock, QDistinct> distinctByStartTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'startTime');
@@ -1737,6 +1855,12 @@ extension RoutineBlockQueryProperty
   QueryBuilder<RoutineBlock, bool, QQueryOperations> isCompletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isCompleted');
+    });
+  }
+
+  QueryBuilder<RoutineBlock, int?, QQueryOperations> linkedSessionIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'linkedSessionId');
     });
   }
 

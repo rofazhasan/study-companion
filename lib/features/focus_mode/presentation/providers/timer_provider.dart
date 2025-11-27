@@ -9,6 +9,8 @@ import '../../../../core/data/isar_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../routine/data/repositories/routine_repository.dart';
+import '../../../routine/data/repositories/mission_repository.dart';
+import '../../../routine/data/models/mission.dart';
 
 part 'timer_provider.g.dart';
 
@@ -247,6 +249,16 @@ class TimerNotifier extends _$TimerNotifier {
          body: 'Time remaining',
          endTime: _endTime,
        );
+       
+       // Schedule completion notification
+       if (_endTime != null) {
+         print('TimerNotifier: Scheduling completion notification. EndTime: $_endTime');
+         ref.read(notificationServiceProvider).scheduleCompletionNotification(
+           title: 'Timer Completed!',
+           body: 'Your ${state.phase.name} session is done.',
+           endTime: _endTime!,
+         );
+       }
     });
 
     _startTicker();
@@ -298,6 +310,23 @@ class TimerNotifier extends _$TimerNotifier {
 
   void toggleDeepFocus() {
     state = state.copyWith(isDeepFocusEnabled: !state.isDeepFocusEnabled);
+  }
+
+  void skip() {
+    _ticker?.cancel();
+    if (state.isDeepFocusEnabled) {
+      ref.read(focusLockServiceProvider).disableLock();
+    }
+    
+    // Determine next phase
+    TimerPhase nextPhase;
+    if (state.phase == TimerPhase.focus) {
+      nextPhase = TimerPhase.shortBreak;
+    } else {
+      nextPhase = TimerPhase.focus;
+    }
+    
+    setPhase(nextPhase);
   }
 
   void setPhase(TimerPhase phase) {
@@ -390,11 +419,23 @@ class TimerNotifier extends _$TimerNotifier {
       if (state.routineBlockId != null) {
         try {
           final routineRepo = ref.read(routineRepositoryProvider);
-          // Explicitly mark as completed
-          await routineRepo.setBlockCompletion(state.routineBlockId!, true);
+          // Explicitly mark as completed, but don't create a new session since we just saved one
+          await routineRepo.setBlockCompletion(state.routineBlockId!, true, createSession: false);
         } catch (e) {
           print("Error updating routine block: $e");
         }
+      }
+      
+      // INTEGRATION: Update Mission Focus Time
+      try {
+        final missionRepo = ref.read(missionRepositoryProvider);
+        // Convert seconds to minutes
+        final minutes = (state.initialSeconds / 60).round();
+        if (minutes > 0) {
+          await missionRepo.updateProgress(DateTime.now(), MissionType.focusTime, minutes);
+        }
+      } catch (e) {
+        print("Error updating mission focus time: $e");
       }
     }
 

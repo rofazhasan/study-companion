@@ -7,7 +7,7 @@ part of 'mission_provider.dart';
 // **************************************************************************
 
 String _$dailyMissionControllerHash() =>
-    r'c52cfb36a32df3944e3deaad6fe4fde6eb1b6265';
+    r'309a0f6e0c4bcb646e776c297c8452af745eb392';
 
 /// Copied from Dart SDK
 class _SystemHash {

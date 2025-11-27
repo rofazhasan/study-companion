@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../../ai_chat/presentation/providers/chat_provider.dart';
 import '../../../ai_chat/data/models/chat_message.dart';
+import '../../../../core/providers/connectivity_provider.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
 
 class ReflectionSheet extends ConsumerStatefulWidget {
   const ReflectionSheet({super.key});
@@ -20,7 +22,25 @@ class _ReflectionSheetState extends ConsumerState<ReflectionSheet> {
   @override
   void initState() {
     super.initState();
-    _startReflection();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkConnectivityAndStart();
+    });
+  }
+
+  Future<void> _checkConnectivityAndStart() async {
+    final isOnline = await ref.read(connectivityNotifierProvider.future);
+    if (!isOnline) {
+      if (mounted) {
+        setState(() {
+          _localMessages.add(ChatMessage()
+            ..role = 'ai'
+            ..content = '🌐 Evening Reflection is not available offline.\n\nThis feature requires an internet connection to provide personalized reflections. Please connect to the internet and try again.'
+            ..timestamp = DateTime.now());
+        });
+      }
+    } else {
+      _startReflection();
+    }
   }
 
   Future<void> _startReflection() async {
@@ -69,18 +89,34 @@ class _ReflectionSheetState extends ConsumerState<ReflectionSheet> {
     try {
       final aiService = ref.read(aiServiceProvider);
       
+      final analyticsAsync = ref.read(analyticsNotifierProvider);
+      String contextInfo = "";
+      
+      if (analyticsAsync.hasValue) {
+        final data = analyticsAsync.value!;
+        final totalFocus = data['totalFocusToday'] as int;
+        final sessions = (data['sessions'] as List).length;
+        final duration = Duration(seconds: totalFocus);
+        final hours = duration.inHours;
+        final minutes = duration.inMinutes.remainder(60);
+        
+        contextInfo = '''
+Context:
+- Total Focus Time Today: ${hours}h ${minutes}m
+- Total Sessions Completed: $sessions
+''';
+      }
+
       // Context for reflection
       final prompt = '''
-<|system|>
 You are a supportive study coach conducting an evening reflection.
 The student just finished their day.
+$contextInfo
 Goal: Help them reflect on wins, learn from challenges, and plan for tomorrow.
 Be concise, encouraging, and ask one follow-up question at a time.
-</s>
-<|user|>
-$text
-</s>
-<|assistant|>
+
+Student: $text
+Coach:
 ''';
 
       final aiMsg = ChatMessage()
@@ -99,7 +135,7 @@ $text
       }
     } catch (e) {
       setState(() {
-        _localMessages.add(ChatMessage()..role = 'ai'..content = "I'm having trouble connecting right now. But great job today!");
+        _localMessages.add(ChatMessage()..role = 'ai'..content = "I'm having trouble connecting to the AI brain right now. But don't let that stop you—great job today!");
       });
     } finally {
       setState(() => _isTyping = false);
@@ -110,9 +146,9 @@ $text
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -184,7 +220,9 @@ $text
                     padding: const EdgeInsets.all(12),
                     constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.indigo : Colors.grey[100],
+                      color: isUser 
+                          ? Theme.of(context).colorScheme.primary 
+                          : Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16).copyWith(
                         bottomRight: isUser ? Radius.zero : null,
                         bottomLeft: !isUser ? Radius.zero : null,
@@ -192,7 +230,11 @@ $text
                     ),
                     child: Text(
                       msg.content,
-                      style: TextStyle(color: isUser ? Colors.white : Colors.black87),
+                      style: TextStyle(
+                        color: isUser 
+                            ? Theme.of(context).colorScheme.onPrimary 
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 );
@@ -213,14 +255,16 @@ $text
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Type your reflection...',
+                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.grey[200],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
                     onSubmitted: (_) => _sendMessage(),

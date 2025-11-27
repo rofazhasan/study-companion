@@ -42,6 +42,8 @@ class RoutineBlock {
   String? subjectName; // Optional link to subject by name for now
   
   int? color; // Custom color override
+  
+  int? linkedSessionId; // ID of the manual session created for this block
 
   DateTime get endTime => startTime.add(Duration(minutes: durationMinutes));
 }

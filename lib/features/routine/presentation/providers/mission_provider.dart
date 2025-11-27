@@ -26,16 +26,45 @@ class DailyMissionController extends _$DailyMissionController {
     return mission;
   }
 
+  Future<void> setMissions(List<MissionItem> items) async {
+    final repository = ref.read(missionRepositoryProvider);
+    // Use the date from the family provider argument if possible, but here we don't have access to it directly in method args easily unless we store it.
+    // Actually, we can't access the family arg 'date' inside the method easily without storing it in state or passing it.
+    // But wait, the provider is `dailyMissionControllerProvider(date)`. 
+    // We can't access `date` here directly.
+    // Let's rely on the state's date if available, or pass it.
+    // Better: The controller is built with `date`. We can store it.
+    // Ah, Riverpod 2.0 classes don't expose family args directly in methods.
+    // We should store it in build.
+    
+    // Workaround: We'll assume the state has the date.
+    final currentMission = state.value;
+    if (currentMission != null) {
+      await repository.setMissions(currentMission.date, items);
+      ref.invalidateSelf();
+    }
+  }
+
   Future<void> toggleItem(int index) async {
     final mission = state.value;
     if (mission == null) return;
 
+    final item = mission.items[index];
+    
+    // PREVENT MANUAL TOGGLE FOR AUTOMATED MISSIONS
+    if (!item.isManual) return;
+
     // Create a new list to trigger updates (Isar embedded objects need care)
     final newItems = List<MissionItem>.from(mission.items);
-    final item = newItems[index];
     
     // Toggle
     item.isCompleted = !item.isCompleted;
+    if (item.isCompleted) {
+      item.current = item.target;
+    } else {
+      item.current = 0;
+    }
+    
     newItems[index] = item; // Update list
 
     mission.items = newItems;

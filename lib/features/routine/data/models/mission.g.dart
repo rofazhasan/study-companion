@@ -836,18 +836,39 @@ const MissionItemSchema = Schema(
   name: r'MissionItem',
   id: -6184418793051394056,
   properties: {
-    r'isCompleted': PropertySchema(
+    r'current': PropertySchema(
       id: 0,
+      name: r'current',
+      type: IsarType.long,
+    ),
+    r'isCompleted': PropertySchema(
+      id: 1,
       name: r'isCompleted',
       type: IsarType.bool,
     ),
+    r'isManual': PropertySchema(
+      id: 2,
+      name: r'isManual',
+      type: IsarType.bool,
+    ),
+    r'target': PropertySchema(
+      id: 3,
+      name: r'target',
+      type: IsarType.long,
+    ),
     r'title': PropertySchema(
-      id: 1,
+      id: 4,
       name: r'title',
       type: IsarType.string,
     ),
+    r'type': PropertySchema(
+      id: 5,
+      name: r'type',
+      type: IsarType.string,
+      enumMap: _MissionItemtypeEnumValueMap,
+    ),
     r'xpReward': PropertySchema(
-      id: 2,
+      id: 6,
       name: r'xpReward',
       type: IsarType.long,
     )
@@ -865,6 +886,7 @@ int _missionItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.title.length * 3;
+  bytesCount += 3 + object.type.name.length * 3;
   return bytesCount;
 }
 
@@ -874,9 +896,13 @@ void _missionItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeBool(offsets[0], object.isCompleted);
-  writer.writeString(offsets[1], object.title);
-  writer.writeLong(offsets[2], object.xpReward);
+  writer.writeLong(offsets[0], object.current);
+  writer.writeBool(offsets[1], object.isCompleted);
+  writer.writeBool(offsets[2], object.isManual);
+  writer.writeLong(offsets[3], object.target);
+  writer.writeString(offsets[4], object.title);
+  writer.writeString(offsets[5], object.type.name);
+  writer.writeLong(offsets[6], object.xpReward);
 }
 
 MissionItem _missionItemDeserialize(
@@ -886,9 +912,15 @@ MissionItem _missionItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = MissionItem();
-  object.isCompleted = reader.readBool(offsets[0]);
-  object.title = reader.readString(offsets[1]);
-  object.xpReward = reader.readLong(offsets[2]);
+  object.current = reader.readLong(offsets[0]);
+  object.isCompleted = reader.readBool(offsets[1]);
+  object.isManual = reader.readBool(offsets[2]);
+  object.target = reader.readLong(offsets[3]);
+  object.title = reader.readString(offsets[4]);
+  object.type =
+      _MissionItemtypeValueEnumMap[reader.readStringOrNull(offsets[5])] ??
+          MissionType.studyBlocks;
+  object.xpReward = reader.readLong(offsets[6]);
   return object;
 }
 
@@ -900,24 +932,164 @@ P _missionItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 2:
+      return (reader.readBool(offset)) as P;
+    case 3:
+      return (reader.readLong(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (_MissionItemtypeValueEnumMap[reader.readStringOrNull(offset)] ??
+          MissionType.studyBlocks) as P;
+    case 6:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
+const _MissionItemtypeEnumValueMap = {
+  r'studyBlocks': r'studyBlocks',
+  r'focusTime': r'focusTime',
+  r'revision': r'revision',
+  r'custom': r'custom',
+};
+const _MissionItemtypeValueEnumMap = {
+  r'studyBlocks': MissionType.studyBlocks,
+  r'focusTime': MissionType.focusTime,
+  r'revision': MissionType.revision,
+  r'custom': MissionType.custom,
+};
+
 extension MissionItemQueryFilter
     on QueryBuilder<MissionItem, MissionItem, QFilterCondition> {
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> currentEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'current',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition>
+      currentGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'current',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> currentLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'current',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> currentBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'current',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition>
       isCompletedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isCompleted',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> isManualEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isManual',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> targetEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'target',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition>
+      targetGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'target',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> targetLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'target',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> targetBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'target',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1049,6 +1221,137 @@ extension MissionItemQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'title',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeEqualTo(
+    MissionType value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeGreaterThan(
+    MissionType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeLessThan(
+    MissionType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeBetween(
+    MissionType lower,
+    MissionType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'type',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'type',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition> typeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MissionItem, MissionItem, QAfterFilterCondition>
+      typeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'type',
         value: '',
       ));
     });

@@ -25,7 +25,10 @@ import '../../features/social/presentation/screens/battle_lobby_screen.dart';
 import '../../features/social/presentation/screens/battle_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/sync_settings_screen.dart';
-import '../../features/settings/presentation/screens/model_download_screen.dart';
+import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/auth/presentation/screens/auth_screen.dart';
+import '../../features/auth/presentation/providers/firebase_auth_provider.dart';
+import '../../core/data/isar_service.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
 
 part 'app_router.g.dart';
@@ -42,11 +45,55 @@ GoRouter router(RouterRef ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/focus',
+    redirect: (context, state) async {
+      // Check Firebase auth state
+      final authUser = await ref.read(firebaseAuthStateProvider.future);
+      final isAuthenticated = authUser != null; // Removed email verification requirement
+      
+      final isGoingToAuth = state.matchedLocation == '/auth';
+      final isGoingToOnboarding = state.matchedLocation == '/onboarding';
+
+      // If not authenticated, redirect to auth
+      if (!isAuthenticated && !isGoingToAuth) {
+        return '/auth';
+      }
+      
+      // If authenticated, check profile completion
+      if (isAuthenticated) {
+        if (isGoingToAuth) {
+          // Already authenticated, check if profile exists
+          final isar = ref.read(isarServiceProvider);
+          final localUser = await isar.getUser();
+          
+          if (localUser == null) {
+            return '/onboarding';
+          } else {
+            return '/focus';
+          }
+        }
+        
+        // If going to onboarding but already has profile, go to home
+        if (isGoingToOnboarding) {
+          final isar = ref.read(isarServiceProvider);
+          final localUser = await isar.getUser();
+          if (localUser != null) {
+            return '/focus';
+          }
+        }
+      }
+      
+      return null; // No redirect
+    },
     routes: [
-      // Model Download Screen (outside nav bar)
+      // Auth Screen
       GoRoute(
-        path: '/download-models',
-        builder: (context, state) => const ModelDownloadScreen(),
+        path: '/auth',
+        builder: (context, state) => const AuthScreen(),
+      ),
+      // Onboarding Screen
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

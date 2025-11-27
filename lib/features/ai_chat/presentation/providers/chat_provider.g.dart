@@ -6,7 +6,7 @@ part of 'chat_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$aiServiceHash() => r'4bc1ada0b92a4692346ff969ea7ed24501c6e548';
+String _$aiServiceHash() => r'77dc3d80ba85f28aec718199bb6e271d8e39530f';
 
 /// See also [aiService].
 @ProviderFor(aiService)
@@ -20,54 +20,6 @@ final aiServiceProvider = AutoDisposeProvider<AIService>.internal(
 );
 
 typedef AiServiceRef = AutoDisposeProviderRef<AIService>;
-String _$embeddingServiceHash() => r'd431387fa3668295ed241adcc3c5d033e1315205';
-
-/// See also [embeddingService].
-@ProviderFor(embeddingService)
-final embeddingServiceProvider = AutoDisposeProvider<EmbeddingService>.internal(
-  embeddingService,
-  name: r'embeddingServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$embeddingServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef EmbeddingServiceRef = AutoDisposeProviderRef<EmbeddingService>;
-String _$modelPathNotifierHash() => r'1bf6ce05c13d0d55d2927f45378dae1cfac35730';
-
-/// See also [ModelPathNotifier].
-@ProviderFor(ModelPathNotifier)
-final modelPathNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<ModelPathNotifier, String?>.internal(
-  ModelPathNotifier.new,
-  name: r'modelPathNotifierProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$modelPathNotifierHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$ModelPathNotifier = AutoDisposeAsyncNotifier<String?>;
-String _$embeddingPathNotifierHash() =>
-    r'5ba03fd345ab1fba2f64014ed704c14446e108df';
-
-/// See also [EmbeddingPathNotifier].
-@ProviderFor(EmbeddingPathNotifier)
-final embeddingPathNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<EmbeddingPathNotifier, String?>.internal(
-  EmbeddingPathNotifier.new,
-  name: r'embeddingPathNotifierProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$embeddingPathNotifierHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$EmbeddingPathNotifier = AutoDisposeAsyncNotifier<String?>;
 String _$chatNotifierHash() => r'585ea1b5623674e02ba776906576270b19cac0cf';
 
 /// See also [ChatNotifier].

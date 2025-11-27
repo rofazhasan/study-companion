@@ -11,6 +11,7 @@ import '../widgets/habit_tracker.dart';
 import '../widgets/mission_card.dart';
 import '../widgets/ai_planner_dialog.dart';
 import '../widgets/reflection_sheet.dart';
+import '../widgets/exam_routine_tab.dart';
 
 class RoutineScreen extends ConsumerWidget {
   const RoutineScreen({super.key});
@@ -21,7 +22,7 @@ class RoutineScreen extends ConsumerWidget {
     final blocksAsync = ref.watch(dailyRoutineBlocksProvider);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Daily Routine'),
@@ -29,6 +30,7 @@ class RoutineScreen extends ConsumerWidget {
             tabs: [
               Tab(text: 'Schedule', icon: Icon(Icons.schedule)),
               Tab(text: 'Habits', icon: Icon(Icons.check_circle_outline)),
+              Tab(text: 'Exams', icon: Icon(Icons.assignment)),
             ],
           ),
           actions: [
@@ -69,71 +71,77 @@ class RoutineScreen extends ConsumerWidget {
         body: TabBarView(
           children: [
             // Schedule Tab
-            Column(
-              children: [
-                _buildDateHeader(context, selectedDate, ref),
-                MissionCard(date: selectedDate),
-                Expanded(
-                  child: blocksAsync.when(
+            Scaffold(
+              backgroundColor: Colors.transparent,
+              body: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _buildDateHeader(context, selectedDate, ref),
+                  ),
+                  SliverToBoxAdapter(
+                    child: MissionCard(date: selectedDate),
+                  ),
+                  blocksAsync.when(
                     data: (blocks) {
                       if (blocks.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.schedule, size: 64, color: Colors.grey),
-                              const Gap(16),
-                              Text(
-                                'No routine planned for today',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const Gap(8),
-                              FilledButton.tonal(
-                                onPressed: () => _showAddBlockDialog(context, selectedDate),
-                                child: const Text('Create Schedule'),
-                              ),
-                            ],
+                        return SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.schedule, size: 64, color: Colors.grey),
+                                const Gap(16),
+                                Text(
+                                  'No routine planned for today',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const Gap(8),
+                                FilledButton.tonal(
+                                  onPressed: () => _showAddBlockDialog(context, selectedDate),
+                                  child: const Text('Create Schedule'),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }
-                      return ListView.builder(
+                      return SliverPadding(
                         padding: const EdgeInsets.all(16),
-                        itemCount: blocks.length,
-                        itemBuilder: (context, index) {
-                          final block = blocks[index];
-                          return _buildBlockCard(context, ref, block);
-                        },
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final block = blocks[index];
+                              return _buildBlockCard(context, ref, block);
+                            },
+                            childCount: blocks.length,
+                          ),
+                        ),
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (err, stack) => Center(child: Text('Error: $err')),
+                    loading: () => const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (err, stack) => SliverFillRemaining(
+                      child: Center(child: Text('Error: $err')),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () => _showAddBlockDialog(context, selectedDate),
+                label: const Text('Add Block'),
+                icon: const Icon(Icons.add),
+                heroTag: 'add_block_fab',
+              ),
             ),
             
             // Habits Tab
             const HabitTracker(),
+            
+            // Exams Tab
+            const ExamRoutineTab(),
           ],
-        ),
-        floatingActionButton: Builder(
-          builder: (context) {
-            final tabController = DefaultTabController.of(context);
-            // Note: DefaultTabController doesn't easily expose index changes to rebuild FAB.
-            // We might need a custom TabController or just show FAB for Schedule only.
-            // For simplicity, let's keep the FAB for Schedule and let HabitTracker manage its own add button (which it does).
-            // But wait, HabitTracker has a button at the bottom of the list.
-            // So we only show this FAB if we are on the first tab?
-            // Actually, DefaultTabController doesn't rebuild this.
-            // Let's just keep the FAB for adding blocks, and maybe hide it if on habits tab?
-            // Or simpler: Just keep it here. If user clicks it, it adds a block.
-            // HabitTracker has its own "Add" button in the list.
-            return FloatingActionButton.extended(
-              onPressed: () => _showAddBlockDialog(context, selectedDate),
-              label: const Text('Add Block'),
-              icon: const Icon(Icons.add),
-            );
-          },
         ),
       ),
     );
@@ -210,13 +218,18 @@ class RoutineScreen extends ConsumerWidget {
     final color = _getBlockColor(context, block.type);
     final isCompleted = block.isCompleted;
     
+    final now = DateTime.now();
+    final isOverdue = !isCompleted && block.endTime.isBefore(now);
+    final borderColor = isOverdue ? Colors.red.withOpacity(0.5) : (isCompleted ? Colors.grey[300]! : color.withOpacity(0.2));
+    final backgroundColor = isOverdue ? Colors.red.withOpacity(0.05) : (isCompleted ? Colors.grey[100] : color.withOpacity(0.1));
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: isCompleted ? Colors.grey[100] : color.withOpacity(0.1),
+      color: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isCompleted ? Colors.grey[300]! : color.withOpacity(0.2)),
+        side: BorderSide(color: borderColor, width: isOverdue ? 1.5 : 1),
       ),
       child: ListTile(
         onTap: () {
@@ -225,7 +238,7 @@ class RoutineScreen extends ConsumerWidget {
               block.type == BlockType.revision) {
             ref.read(timerNotifierProvider.notifier).configureSession(
               durationSeconds: block.durationMinutes * 60,
-              intent: block.title ?? block.type.name,
+              intent: block.title?.isNotEmpty == true ? block.title! : block.type.name,
               routineBlockId: block.id,
             );
             context.go('/focus');

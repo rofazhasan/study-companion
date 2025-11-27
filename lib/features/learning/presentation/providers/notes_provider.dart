@@ -1,7 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/data/isar_service.dart';
-import '../../../ai_chat/presentation/providers/chat_provider.dart';
-import '../../../ai_chat/data/datasources/vector_store_service.dart';
 import '../../data/models/note.dart';
 
 part 'notes_provider.g.dart';
@@ -14,18 +12,9 @@ class NotesNotifier extends _$NotesNotifier {
   }
 
   Future<void> addNote(String title, String content) async {
-    final embeddingService = ref.read(embeddingServiceProvider);
-    
-    // Generate embedding
-    List<double>? embedding;
-    if (embeddingService.isLoaded) {
-      embedding = await embeddingService.getEmbedding('$title\n$content');
-    }
-
     final note = Note()
       ..title = title
       ..content = content
-      ..embedding = embedding
       ..createdAt = DateTime.now()
       ..updatedAt = DateTime.now();
     
@@ -47,10 +36,12 @@ class NotesNotifier extends _$NotesNotifier {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final allNotes = await ref.read(isarServiceProvider).getNotes();
-      final embeddingService = ref.read(embeddingServiceProvider);
-      final vectorStore = VectorStoreService(embeddingService);
-      
-      return vectorStore.searchNotes(query, allNotes);
+      // Simple text search fallback
+      final lowerQuery = query.toLowerCase();
+      return allNotes.where((note) {
+        return note.title.toLowerCase().contains(lowerQuery) ||
+               note.content.toLowerCase().contains(lowerQuery);
+      }).toList();
     });
   }
 

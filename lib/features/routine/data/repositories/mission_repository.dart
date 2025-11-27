@@ -35,10 +35,62 @@ class MissionRepository {
     final mission = DailyMission()
       ..date = startOfDay
       ..items = [
-        MissionItem()..title = 'Complete 3 Study Blocks'..xpReward = 50,
-        MissionItem()..title = 'Read for 30 minutes'..xpReward = 30,
-        MissionItem()..title = 'Review Flashcards'..xpReward = 20,
+        MissionItem()
+          ..title = 'Complete 3 Study Blocks'
+          ..xpReward = 50
+          ..type = MissionType.studyBlocks
+          ..target = 3
+          ..isManual = false,
+        MissionItem()
+          ..title = 'Focus for 60 Minutes'
+          ..xpReward = 40
+          ..type = MissionType.focusTime
+          ..target = 60
+          ..isManual = false,
+        MissionItem()
+          ..title = 'Review Flashcards'
+          ..xpReward = 20
+          ..type = MissionType.revision
+          ..target = 1
+          ..isManual = false,
       ];
+    await saveMission(mission);
+  }
+
+  Future<void> updateProgress(DateTime date, MissionType type, int amount) async {
+    final mission = await getMissionForDate(date);
+    if (mission == null) return;
+
+    bool changed = false;
+    final newItems = List<MissionItem>.from(mission.items);
+
+    for (int i = 0; i < newItems.length; i++) {
+      final item = newItems[i];
+      if (item.type == type && !item.isCompleted) {
+        item.current += amount;
+        if (item.current >= item.target) {
+          item.current = item.target;
+          item.isCompleted = true;
+        }
+        newItems[i] = item;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      mission.items = newItems;
+      await saveMission(mission);
+    }
+  }
+
+  Future<void> setMissions(DateTime date, List<MissionItem> items) async {
+    var mission = await getMissionForDate(date);
+    if (mission == null) {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      mission = DailyMission()..date = startOfDay;
+    }
+    
+    mission.items = items;
     await saveMission(mission);
   }
 }

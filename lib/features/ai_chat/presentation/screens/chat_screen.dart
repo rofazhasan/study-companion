@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../providers/chat_provider.dart';
-import '../widgets/model_settings_dialog.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -47,16 +46,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       appBar: AppBar(
         title: const Text('AI Tutor'),
         actions: [
-          IconButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => const ModelSettingsDialog(),
-              );
-            },
-            icon: const Icon(Icons.settings),
-            tooltip: 'Model Settings',
-          ),
           IconButton(
             onPressed: () {
               ref.read(chatNotifierProvider.notifier).clearChat();

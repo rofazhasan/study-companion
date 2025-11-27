@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../providers/subject_provider.dart';
 import '../providers/routine_ai_provider.dart';
+import '../../../../core/providers/connectivity_provider.dart';
 
 class AIPlannerDialog extends ConsumerStatefulWidget {
   final DateTime date;
@@ -15,6 +16,7 @@ class AIPlannerDialog extends ConsumerStatefulWidget {
 
 class _AIPlannerDialogState extends ConsumerState<AIPlannerDialog> {
   final _selectedSubjects = <String>{};
+  final _customSubjects = <String>{};
   String _mood = 'Energetic';
   double _totalHours = 4;
 
@@ -49,25 +51,42 @@ class _AIPlannerDialogState extends ConsumerState<AIPlannerDialog> {
             const Gap(8),
             subjectsAsync.when(
               data: (subjects) {
-                if (subjects.isEmpty) return const Text('No subjects added yet.');
-                return Wrap(
-                  spacing: 8,
-                  children: subjects.map((subject) {
-                    final isSelected = _selectedSubjects.contains(subject.name);
-                    return FilterChip(
-                      label: Text(subject.name),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedSubjects.add(subject.name);
-                          } else {
-                            _selectedSubjects.remove(subject.name);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                final allSubjects = {...subjects.map((s) => s.name), ..._customSubjects};
+                
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (allSubjects.isEmpty) 
+                      const Text('No subjects found. Add one below!'),
+                      
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ...allSubjects.map((subject) {
+                          final isSelected = _selectedSubjects.contains(subject);
+                          return FilterChip(
+                            label: Text(subject),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedSubjects.add(subject);
+                                } else {
+                                  _selectedSubjects.remove(subject);
+                                }
+                              });
+                            },
+                          );
+                        }),
+                        ActionChip(
+                          avatar: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Custom'),
+                          onPressed: _showAddSubjectDialog,
+                        ),
+                      ],
+                    ),
+                  ],
                 );
               },
               loading: () => const LinearProgressIndicator(),
@@ -126,15 +145,77 @@ class _AIPlannerDialogState extends ConsumerState<AIPlannerDialog> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          FilledButton.icon(
-            onPressed: _selectedSubjects.isEmpty ? null : _generateSchedule,
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Generate'),
+          Consumer(
+            builder: (context, ref, child) {
+              final connectivityAsync = ref.watch(connectivityNotifierProvider);
+              return connectivityAsync.when(
+                data: (isOnline) => FilledButton.icon(
+                  onPressed: !isOnline
+                      ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('This feature requires internet connection'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      : (_selectedSubjects.isEmpty ? null : _generateSchedule),
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Generate'),
+                ),
+                loading: () => const CircularProgressIndicator(),
+                error: (_, __) => FilledButton.icon(
+                  onPressed: _selectedSubjects.isEmpty ? null : _generateSchedule,
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Generate'),
+                ),
+              );
+            },
           ),
         ],
       ],
     );
+    }
+
+  void _showAddSubjectDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Custom Subject'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Subject Name',
+            hintText: 'e.g., Quantum Physics',
+            border: OutlineInputBorder(),
+          ),
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                setState(() {
+                  _customSubjects.add(name);
+                  _selectedSubjects.add(name);
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
   }
+
 
   Future<void> _generateSchedule() async {
     await ref.read(routineAIProvider.notifier).generateSchedule(

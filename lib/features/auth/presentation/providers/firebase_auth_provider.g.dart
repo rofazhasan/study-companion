@@ -1,26 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'model_download_service.dart';
+part of 'firebase_auth_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$modelDownloadServiceHash() =>
-    r'097ca8206ca9d4e6c151be2e4ebd48613e194efe';
+String _$firebaseAuthStateHash() => r'8f4e86d62eb7a58620038a11e5dd075acdb9141f';
 
-/// See also [modelDownloadService].
-@ProviderFor(modelDownloadService)
-final modelDownloadServiceProvider = Provider<ModelDownloadService>.internal(
-  modelDownloadService,
-  name: r'modelDownloadServiceProvider',
+/// See also [FirebaseAuthState].
+@ProviderFor(FirebaseAuthState)
+final firebaseAuthStateProvider =
+    AutoDisposeStreamNotifierProvider<FirebaseAuthState, User?>.internal(
+  FirebaseAuthState.new,
+  name: r'firebaseAuthStateProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$modelDownloadServiceHash,
+      : _$firebaseAuthStateHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef ModelDownloadServiceRef = ProviderRef<ModelDownloadService>;
+typedef _$FirebaseAuthState = AutoDisposeStreamNotifier<User?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

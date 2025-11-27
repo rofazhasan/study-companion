@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../data/analytics_repository.dart';
 import '../../../ai_chat/presentation/providers/chat_provider.dart';
 import '../../../focus_mode/data/models/study_session.dart';
+import '../../../../core/providers/connectivity_provider.dart';
 
 part 'analytics_provider.g.dart';
 
@@ -106,7 +107,14 @@ class AIInsightNotifier extends _$AIInsightNotifier {
 
   Future<void> generateInsight(Map<String, dynamic> stats) async {
     state = const AsyncValue.loading();
-    
+
+    // Check connectivity
+    final connectivity = await ref.read(connectivityNotifierProvider.future);
+    if (!connectivity) {
+      state = const AsyncValue.data('AI insights are not available offline. Connect to internet to generate personalized insights.');
+      return;
+    }
+
     final aiService = ref.read(aiServiceProvider);
     
     // Extract stats

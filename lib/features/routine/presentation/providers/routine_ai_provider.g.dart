@@ -6,7 +6,7 @@ part of 'routine_ai_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$routineAIHash() => r'ddc8021e56006e1a17c8de44506955a97f192351';
+String _$routineAIHash() => r'a9c14f549a1515e266abd11347e16c203aace46d';
 
 /// See also [RoutineAI].
 @ProviderFor(RoutineAI)

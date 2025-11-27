@@ -22,7 +22,7 @@ final analyticsNotifierProvider = AutoDisposeAsyncNotifierProvider<
 );
 
 typedef _$AnalyticsNotifier = AutoDisposeAsyncNotifier<Map<String, dynamic>>;
-String _$aIInsightNotifierHash() => r'2719051ef6ca863f07e0727aaac7e4e72a1f2a83';
+String _$aIInsightNotifierHash() => r'2fec3671245993a6ab0ee5b5bf9d9b4f72cca4d2';
 
 /// See also [AIInsightNotifier].
 @ProviderFor(AIInsightNotifier)
