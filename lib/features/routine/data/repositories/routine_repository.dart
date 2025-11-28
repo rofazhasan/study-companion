@@ -190,6 +190,8 @@ class RoutineRepository {
 
     dailyRoutine.healthScore = score;
     await saveDailyRoutine(dailyRoutine);
+  }
+
   Future<void> _syncMissionTarget(DateTime date) async {
     final blocks = await getBlocksForDate(date);
     
