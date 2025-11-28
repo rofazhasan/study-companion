@@ -23,10 +23,17 @@ part 'isar_service.g.dart';
 
 @Riverpod(keepAlive: true)
 IsarService isarService(IsarServiceRef ref) {
-  throw UnimplementedError('IsarService must be initialized via override');
+  return IsarService();
 }
 
 class IsarService {
+  static final IsarService _instance = IsarService._internal();
+  
+  factory IsarService() {
+    return _instance;
+  }
+  
+  IsarService._internal();
   late final Isar _isar;
   Isar get db => _isar;
 

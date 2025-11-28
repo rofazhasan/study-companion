@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/focus_mode/presentation/screens/focus_screen.dart';
 import '../../features/focus_mode/presentation/screens/focus_screen.dart';
 import '../../features/routine/presentation/screens/routine_screen.dart';
@@ -29,6 +30,7 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/sync_settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
+import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/providers/firebase_auth_provider.dart';
 import '../../features/analytics/presentation/screens/analytics_screen.dart';
 import '../../core/data/isar_service.dart';
@@ -52,23 +54,35 @@ GoRouter router(RouterRef ref) {
     initialLocation: '/focus',
     refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
     redirect: (context, state) async {
-      // Check Firebase auth state
-      final authUser = await ref.read(firebaseAuthStateProvider.future);
-      final isAuthenticated = authUser != null; // Removed email verification requirement
+      // Check Firebase auth state directly since startupProvider ensures init
+      final authUser = FirebaseAuth.instance.currentUser;
+      final isAuthenticated = authUser != null;
       
+      final isGoingToSplash = state.matchedLocation == '/splash';
       final isGoingToAuth = state.matchedLocation == '/auth';
       final isGoingToOnboarding = state.matchedLocation == '/onboarding';
 
+      // If loading finished and we are still on splash, decide where to go
+      if (isGoingToSplash) {
+        if (isAuthenticated) {
+          final isar = ProviderScope.containerOf(context).read(isarServiceProvider);
+          final localUser = await isar.getUser();
+          return localUser != null ? '/focus' : '/onboarding';
+        } else {
+          return '/auth';
+        }
+      }
+
       // If not authenticated, redirect to auth
-      if (!isAuthenticated && !isGoingToAuth) {
+      if (!isAuthenticated && !isGoingToAuth && !isGoingToSplash) {
         return '/auth';
       }
       
       // If authenticated, check profile completion
       if (isAuthenticated) {
-        if (isGoingToAuth) {
+        if (isGoingToAuth || isGoingToSplash) {
           // Already authenticated, check if profile exists
-          final isar = ref.read(isarServiceProvider);
+          final isar = ProviderScope.containerOf(context).read(isarServiceProvider);
           final localUser = await isar.getUser();
           
           if (localUser == null) {
@@ -80,7 +94,7 @@ GoRouter router(RouterRef ref) {
         
         // If going to onboarding but already has profile, go to home
         if (isGoingToOnboarding) {
-          final isar = ref.read(isarServiceProvider);
+          final isar = ProviderScope.containerOf(context).read(isarServiceProvider);
           final localUser = await isar.getUser();
           if (localUser != null) {
             return '/focus';
@@ -91,6 +105,11 @@ GoRouter router(RouterRef ref) {
       return null; // No redirect
     },
     routes: [
+      // Splash Screen
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       // Auth Screen
       GoRoute(
         path: '/auth',

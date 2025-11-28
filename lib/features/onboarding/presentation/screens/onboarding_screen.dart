@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../settings/presentation/providers/user_provider.dart';
+import '../../../../core/presentation/widgets/three_d_background.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,7 +16,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with TickerProviderStateMixin {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pageController = PageController();
   final _formKey = GlobalKey<FormState>();
   
@@ -27,25 +28,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
   int _currentPage = 0;
   bool _isLoading = false;
 
-  // Animation Controllers
-  late final AnimationController _backgroundController;
-
-  @override
-  void initState() {
-    super.initState();
-    _backgroundController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
     _nameController.dispose();
     _classController.dispose();
     _schoolController.dispose();
-    _backgroundController.dispose();
     super.dispose();
   }
 
@@ -103,93 +91,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // 1. Animated Background
-          _buildAnimatedBackground(),
-
-          // 2. Glass Overlay
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-              child: Container(color: Colors.white.withOpacity(0.1)),
-            ),
-          ),
-
-          // 3. Content
-          SafeArea(
-            child: Column(
-              children: [
-                const Gap(20),
-                // Progress Indicator
-                _buildProgressIndicator(),
-                
-                Expanded(
-                  child: Form(
-                    key: _formKey,
-                    child: PageView(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        _buildStep1Identity(),
-                        _buildStep2Education(),
-                        _buildStep3Contact(),
-                      ],
-                    ),
+      body: ThreeDBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              const Gap(20),
+              // Progress Indicator
+              _buildProgressIndicator(),
+              
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildStep1Identity(),
+                      _buildStep2Education(),
+                      _buildStep3Contact(),
+                    ],
                   ),
                 ),
-                
-                // Navigation Buttons
-                _buildNavigationButtons(),
-                const Gap(20),
-              ],
-            ),
+              ),
+              
+              // Navigation Buttons
+              _buildNavigationButtons(),
+              const Gap(20),
+            ],
           ),
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildAnimatedBackground() {
-    return AnimatedBuilder(
-      animation: _backgroundController,
-      builder: (context, child) {
-        return Stack(
-          children: [
-            Container(color: const Color(0xFFF3F4F6)), // Base color
-            // Orb 1
-            Positioned(
-              top: -100 + (_backgroundController.value * 50),
-              left: -50 + (_backgroundController.value * 30),
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0xFF6A11CB), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            // Orb 2
-            Positioned(
-              bottom: -50 - (_backgroundController.value * 50),
-              right: -100 - (_backgroundController.value * 30),
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0xFF2575FC), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -205,10 +136,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
               height: 6,
               margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF6A11CB) : Colors.grey[300],
+                color: isActive ? Colors.white : Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(3),
                 boxShadow: isActive ? [
-                  BoxShadow(color: const Color(0xFF6A11CB).withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))
+                  BoxShadow(color: Colors.white.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))
                 ] : [],
               ),
             ),
@@ -222,9 +153,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
     return _OnboardingStep(
       title: "Welcome! 👋",
       subtitle: "Let's get to know you better.",
-      heroWidget: const _Hero3DElement(icon: Icons.person_rounded, color: Color(0xFF6A11CB)),
+      heroWidget: const _Hero3DElement(icon: Icons.person_rounded, color: Color(0xFF4FACFE)),
       children: [
-        _buildTextField(
+        _buildGlassTextField(
           controller: _nameController,
           label: "Full Name",
           hint: "e.g., John Doe",
@@ -239,16 +170,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
     return _OnboardingStep(
       title: "Tell us about your school",
       subtitle: "This helps us personalize your experience.",
-      heroWidget: const _Hero3DElement(icon: Icons.school_rounded, color: Color(0xFF2575FC)),
+      heroWidget: const _Hero3DElement(icon: Icons.school_rounded, color: Color(0xFF00F2FE)),
       children: [
-        _buildTextField(
+        _buildGlassTextField(
           controller: _classController,
           label: "Class / Grade",
           hint: "e.g., Grade 10 or Class XII",
           icon: Icons.grade_outlined,
         ),
         const Gap(16),
-        _buildTextField(
+        _buildGlassTextField(
           controller: _schoolController,
           label: "School Name (Optional)",
           hint: "e.g., ABC High School",
@@ -265,61 +196,67 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
       subtitle: "Let's start your learning journey together.",
       heroWidget: const _Hero3DElement(icon: Icons.rocket_launch_rounded, color: Color(0xFFFF6D6D)),
       children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF6A11CB).withOpacity(0.2)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.check_circle,
-                size: 48,
-                color: const Color(0xFF6A11CB),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
               ),
-              const Gap(12),
-              Text(
-                "Your profile is complete!",
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF333333),
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.check_circle,
+                    size: 48,
+                    color: Colors.greenAccent,
+                  ),
+                  const Gap(12),
+                  Text(
+                    "Your profile is complete!",
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Gap(8),
+                  Text(
+                    "We're excited to help you achieve your learning goals. "
+                    "Your personalized study experience starts now!",
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              const Gap(8),
-              Text(
-                "We're excited to help you achieve your learning goals. "
-                "Your personalized study experience starts now!",
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
         ),
         const Gap(16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              Icon(Icons.privacy_tip_outlined, size: 20, color: Colors.grey[600]),
+              Icon(Icons.privacy_tip_outlined, size: 20, color: Colors.white60),
               const Gap(12),
               Expanded(
                 child: Text(
                   "All your data is stored securely on your device",
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.grey[700],
+                    color: Colors.white60,
                   ),
                 ),
               ),
@@ -342,24 +279,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
               onPressed: _prevPage,
               child: Text(
                 "Back",
-                style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[700]),
+                style: GoogleFonts.inter(fontSize: 16, color: Colors.white70),
               ),
             )
           else
             const SizedBox(width: 60),
 
           // Next/Finish Button
-          FilledButton(
+          ElevatedButton(
             onPressed: _isLoading ? null : _nextPage,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6A11CB),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF2C5364),
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 8,
-              shadowColor: const Color(0xFF6A11CB).withOpacity(0.5),
             ),
             child: _isLoading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -377,7 +314,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildGlassTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -392,16 +329,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
       autofocus: autoFocus,
       keyboardType: inputType,
       validator: validator ?? (v) => isRequired && (v == null || v.isEmpty) ? 'This field is required' : null,
-      style: GoogleFonts.inter(fontSize: 16, color: Colors.black87),
+      style: GoogleFonts.inter(fontSize: 16, color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF6A11CB)),
+        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+        labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+        prefixIcon: Icon(icon, color: Colors.white70),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.8),
+        fillColor: Colors.white.withOpacity(0.1),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey[200]!)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF6A11CB), width: 2)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white, width: 2)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.red[300]!)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.red, width: 2)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -434,13 +373,13 @@ class _OnboardingStep extends StatelessWidget {
           const Gap(40),
           Text(
             title,
-            style: GoogleFonts.poppins(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF333333)),
+            style: GoogleFonts.playfairDisplay(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
             textAlign: TextAlign.center,
           ).animate().fadeIn().slideY(begin: 0.3, end: 0),
           const Gap(8),
           Text(
             subtitle,
-            style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[600]),
+            style: GoogleFonts.inter(fontSize: 16, color: Colors.white70),
             textAlign: TextAlign.center,
           ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.3, end: 0),
           const Gap(40),
@@ -491,8 +430,9 @@ class _Hero3DElementState extends State<_Hero3DElement> with SingleTickerProvide
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
               boxShadow: [
                 BoxShadow(
                   color: widget.color.withOpacity(0.3),
@@ -505,8 +445,8 @@ class _Hero3DElementState extends State<_Hero3DElement> with SingleTickerProvide
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white,
-                  Colors.grey[100]!,
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.05),
                 ],
               ),
             ),
@@ -514,7 +454,7 @@ class _Hero3DElementState extends State<_Hero3DElement> with SingleTickerProvide
               child: Icon(
                 widget.icon,
                 size: 60,
-                color: widget.color,
+                color: Colors.white,
               ),
             ),
           ),

@@ -8,6 +8,7 @@ import '../../../../core/data/isar_service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/feedback_service.dart';
 import '../../../routine/data/repositories/routine_repository.dart';
 import '../../../routine/data/repositories/mission_repository.dart';
 import '../../../routine/data/models/mission.dart';
@@ -38,6 +39,7 @@ class TimerNotifier extends _$TimerNotifier {
     // Cleanup timer on dispose
     ref.onDispose(() {
       _ticker?.cancel();
+      ref.read(feedbackServiceProvider).stop();
     });
     
     _loadSettings();
@@ -100,7 +102,7 @@ class TimerNotifier extends _$TimerNotifier {
       } else {
         // Timer finished while away
         final phase = TimerPhase.values[savedPhaseIndex];
-         state = state.copyWith(
+        state = state.copyWith(
           initialSeconds: savedInitialSeconds,
           remainingSeconds: 0,
           phase: phase,
@@ -173,6 +175,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void setDuration(int seconds) {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     if (state.status == TimerStatus.running) return;
     
     if (state.phase == TimerPhase.focus) {
@@ -206,6 +211,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void configureSession({required int durationSeconds, required String intent, int? routineBlockId}) {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     if (state.status == TimerStatus.running) return;
     
     _ticker?.cancel();
@@ -231,6 +239,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void start() {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     if (state.status == TimerStatus.running) return;
 
     if (state.isDeepFocusEnabled) {
@@ -276,6 +287,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void pause() {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     _ticker?.cancel();
     if (state.isDeepFocusEnabled) {
       ref.read(focusLockServiceProvider).disableLock();
@@ -287,6 +301,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void reset() {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     _ticker?.cancel();
     if (state.isDeepFocusEnabled) {
       ref.read(focusLockServiceProvider).disableLock();
@@ -313,6 +330,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void skip() {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     _ticker?.cancel();
     if (state.isDeepFocusEnabled) {
       ref.read(focusLockServiceProvider).disableLock();
@@ -330,6 +350,9 @@ class TimerNotifier extends _$TimerNotifier {
   }
 
   void setPhase(TimerPhase phase) {
+    // Stop any ongoing feedback
+    ref.read(feedbackServiceProvider).stop();
+
     if (state.status == TimerStatus.running) return;
     _ticker?.cancel();
     if (state.status == TimerStatus.running) return;
@@ -385,8 +408,10 @@ class TimerNotifier extends _$TimerNotifier {
     if (remaining > 0) {
       state = state.copyWith(remainingSeconds: remaining);
       
-      // Notification handled by native chronometer
-      
+      // Feedback: Countdown 3, 2, 1
+      if (remaining <= 3) {
+        ref.read(feedbackServiceProvider).speak(remaining.toString());
+      }
       
     } else {
       state = state.copyWith(remainingSeconds: 0);
@@ -399,6 +424,9 @@ class TimerNotifier extends _$TimerNotifier {
     if (state.isDeepFocusEnabled) {
       ref.read(focusLockServiceProvider).disableLock();
     }
+    
+    // Feedback: Completion (Enhanced)
+    ref.read(feedbackServiceProvider).startCompletionFeedback();
     
     // Save Session
     if (state.phase == TimerPhase.focus) {

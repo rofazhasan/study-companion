@@ -12,6 +12,13 @@ NotificationService notificationService(NotificationServiceRef ref) {
 }
 
 class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  
+  factory NotificationService() {
+    return _instance;
+  }
+  
+  NotificationService._internal();
   final fln.FlutterLocalNotificationsPlugin _notificationsPlugin =
       fln.FlutterLocalNotificationsPlugin();
 
