@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/focus_mode/presentation/screens/focus_screen.dart';
@@ -49,7 +50,7 @@ GoRouter router(RouterRef ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/focus',
-    refreshListenable: GoRouterRefreshStream(ref.watch(firebaseAuthStateProvider.stream)),
+    refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
     redirect: (context, state) async {
       // Check Firebase auth state
       final authUser = await ref.read(firebaseAuthStateProvider.future);
