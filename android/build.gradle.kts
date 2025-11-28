@@ -1,3 +1,10 @@
+plugins {
+    id("dev.flutter.flutter-gradle-plugin") apply false
+    id("com.android.application") apply false
+    id("org.jetbrains.kotlin.android") apply false
+    id("com.google.gms.google-services") version "4.4.2" apply false
+}
+
 allprojects {
     repositories {
         google()
@@ -29,6 +36,7 @@ subprojects {
             android.compileSdkVersion = "android-34"
         }
     }
+
     configurations.all {
         resolutionStrategy {
             force("androidx.core:core:1.13.1")

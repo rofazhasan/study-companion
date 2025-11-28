@@ -53,3 +53,7 @@ api_keys.dart
 
 # Releases
 releases/
+
+# Firebase
+google-services.json
+
