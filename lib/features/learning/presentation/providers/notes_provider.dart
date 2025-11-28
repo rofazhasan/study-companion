@@ -11,10 +11,11 @@ class NotesNotifier extends _$NotesNotifier {
     return ref.read(isarServiceProvider).getNotes();
   }
 
-  Future<void> addNote(String title, String content) async {
+  Future<void> addNote(String title, String content, {List<String>? images}) async {
     final note = Note()
       ..title = title
       ..content = content
+      ..images = images
       ..createdAt = DateTime.now()
       ..updatedAt = DateTime.now();
     
@@ -23,6 +24,20 @@ class NotesNotifier extends _$NotesNotifier {
     // Refresh the list
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => ref.read(isarServiceProvider).getNotes());
+  }
+
+  Future<void> updateNote(int id, String title, String content, List<String> images) async {
+    final note = await ref.read(isarServiceProvider).getNote(id);
+    if (note != null) {
+      note.title = title;
+      note.content = content;
+      note.images = images;
+      note.updatedAt = DateTime.now();
+      await ref.read(isarServiceProvider).saveNote(note);
+      // Refresh the list
+      state = const AsyncValue.loading();
+      state = await AsyncValue.guard(() => ref.read(isarServiceProvider).getNotes());
+    }
   }
 
   Future<void> search(String query) async {

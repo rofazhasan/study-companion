@@ -3,14 +3,14 @@ import '../../../../core/data/isar_service.dart';
 import '../../data/datasources/ai_service.dart';
 import '../../data/datasources/gemini_service.dart';
 import '../../data/models/chat_message.dart';
+import '../../../settings/presentation/providers/api_key_provider.dart';
 
 part 'chat_provider.g.dart';
 
-final geminiServiceSingleton = GeminiService();
-
 @riverpod
 AIService aiService(AiServiceRef ref) {
-  return geminiServiceSingleton;
+  final apiKey = ref.watch(apiKeyProvider).value ?? '';
+  return GeminiService(apiKey: apiKey);
 }
 
 @riverpod

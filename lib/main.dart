@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'app.dart';
 import 'core/data/isar_service.dart';
 import 'core/services/notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,9 @@ void main() async {
 
   final notificationService = NotificationService();
   await notificationService.init();
+
+  // Request permissions
+  await _requestPermissions();
   
   runApp(
     ProviderScope(
@@ -29,4 +33,12 @@ void main() async {
       child: const StudyCompanionApp(),
     ),
   );
+}
+
+Future<void> _requestPermissions() async {
+  await [
+    Permission.notification,
+    Permission.scheduleExactAlarm,
+    Permission.storage, // For older Android versions if needed
+  ].request();
 }

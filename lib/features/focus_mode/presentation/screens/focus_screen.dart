@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/entities/pomodoro_timer.dart';
 import '../providers/timer_provider.dart';
 import '../widgets/smart_break_tip.dart';
+import '../../data/datasources/focus_lock_service.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
@@ -268,7 +269,48 @@ class _FocusScreenState extends ConsumerState<FocusScreen> with WidgetsBindingOb
                 value: timerState.isDeepFocusEnabled,
                 onChanged: timerState.status == TimerStatus.running
                     ? null // Disable toggle while running
-                    : (value) => timerNotifier.toggleDeepFocus(),
+                    : (value) async {
+                        if (value) {
+                          // Check if Device Admin is active
+                          final isDeviceAdmin = await ref.read(focusLockServiceProvider).isDeviceAdminActive();
+                          if (!isDeviceAdmin) {
+                            if (context.mounted) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Enable Deep Focus Security'),
+                                  content: const Text(
+                                    'To prevent exiting during a session, Study Companion needs Device Admin permission.\n\n'
+                                    'This allows us to lock the screen to the app. We do NOT use this for any other purpose.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () async {
+                                        Navigator.pop(context);
+                                        await ref.read(focusLockServiceProvider).requestDeviceAdmin();
+                                        // We can't easily know when they return from settings, 
+                                        // so we'll just toggle it on for now and let them grant it.
+                                        // Or we could wait? No, startActivity is async.
+                                        // Let's toggle it on, but maybe show a tip?
+                                        timerNotifier.toggleDeepFocus(); 
+                                      },
+                                      child: const Text('Grant Permission'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          } else {
+                            timerNotifier.toggleDeepFocus();
+                          }
+                        } else {
+                          timerNotifier.toggleDeepFocus();
+                        }
+                      },
                 secondary: const Icon(Icons.lock_outline),
               ),
               const Gap(24),

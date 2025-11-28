@@ -470,6 +470,24 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   if (value.toInt() < 0 || value.toInt() >= sortedDates.length) {
                     return const SizedBox();
                   }
+                  
+                  // Logic to skip labels if too many
+                  // For month view (approx 30 days), show every 5th day
+                  // For year view (12 months), show all
+                  // For week view (7 days), show all
+                  
+                  bool showLabel = true;
+                  if (sortedDates.length > 14) {
+                    // Show first, last, and every 5th in between
+                    if (value.toInt() != 0 && 
+                        value.toInt() != sortedDates.length - 1 && 
+                        value.toInt() % 5 != 0) {
+                      showLabel = false;
+                    }
+                  }
+
+                  if (!showLabel) return const SizedBox();
+
                   final date = sortedDates[value.toInt()];
                   String label;
                   if (filter == AnalyticsFilter.year) {
@@ -597,7 +615,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -612,6 +630,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Row 1: Icon, Title, and Menu
           Row(
             children: [
               Container(
@@ -628,21 +647,61 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               ),
               const Gap(12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      session.focusIntent?.isNotEmpty == true 
-                          ? session.focusIntent! 
-                          : 'Focus Session',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                child: Text(
+                  session.focusIntent?.isNotEmpty == true 
+                      ? session.focusIntent! 
+                      : 'Focus Session',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                onSelected: (value) {
+                  if (value == 'edit') _showEditSessionDialog(context, session);
+                  if (value == 'delete') _confirmDeleteSession(context, session);
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20),
+                        Gap(8),
+                        Text('Edit'),
+                      ],
                     ),
-                    const Gap(4),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 20, color: Colors.red),
+                        Gap(8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const Gap(12),
+          // Row 2: Time Info, Duration, and Badge
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Start/Stop Times
+              Expanded(
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.play_arrow,
@@ -656,7 +715,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                         ),
-                        const Gap(8),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Icon(
                           Icons.stop,
                           size: 14,
@@ -674,82 +737,37 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   ],
                 ),
               ),
-              Row(
+              const Gap(12),
+              // Duration and Badge
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _formatDuration(session.durationSeconds),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      if (session.isDeepFocus)
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'DEEP',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onTertiaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        )
-                      else
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'NORMAL',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
+                  Text(
+                    _formatDuration(session.durationSeconds),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
                         ),
-                    ],
                   ),
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    onSelected: (value) {
-                      if (value == 'edit') _showEditSessionDialog(context, session);
-                      if (value == 'delete') _confirmDeleteSession(context, session);
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 20),
-                            Gap(8),
-                            Text('Edit'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, size: 20, color: Colors.red),
-                            Gap(8),
-                            Text('Delete', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
+                  const Gap(4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: session.isDeepFocus
+                          ? Theme.of(context).colorScheme.tertiaryContainer
+                          : Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      session.isDeepFocus ? 'DEEP' : 'NORMAL',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: session.isDeepFocus
+                                ? Theme.of(context).colorScheme.onTertiaryContainer
+                                : Theme.of(context).colorScheme.onSecondaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
                   ),
                 ],
               ),

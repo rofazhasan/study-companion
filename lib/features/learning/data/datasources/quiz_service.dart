@@ -7,18 +7,17 @@ class QuizService {
 
   QuizService(this._aiService);
 
-  Future<List<QuizQuestion>> generateQuiz(String content) async {
+  Future<List<QuizQuestion>> generateQuiz(String content, {String difficulty = 'Medium', int count = 5, String language = 'English'}) async {
     final prompt = '''
-You are a helpful AI tutor. Generate 5 multiple-choice questions (MCQs) based on the following text.
+You are a helpful AI tutor. Generate $count multiple-choice questions (MCQs) based on the topic/text: "$content".
+Difficulty Level: $difficulty.
+Language: $language.
 Return ONLY a valid JSON array of objects. Do not include any markdown formatting or extra text.
 Each object must have:
 - "question": The question string
 - "options": An array of 4 strings
 - "correctIndex": The integer index (0-3) of the correct answer
 - "explanation": A brief explanation of why the answer is correct
-
-Text:
-$content
 
 JSON:
 ''';

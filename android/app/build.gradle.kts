@@ -56,4 +56,12 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.activity:activity-ktx:1.9.3")
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("androidx.activity:activity-ktx:1.9.3")
+        force("androidx.activity:activity:1.9.3")
+    }
 }

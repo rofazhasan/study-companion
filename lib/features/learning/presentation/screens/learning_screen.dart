@@ -21,10 +21,11 @@ class LearningScreen extends StatelessWidget {
               crossAxisSpacing: 16,
               children: [
                 _LearningCard(
-                  title: 'Subjects',
-                  icon: Icons.library_books,
-                  color: Colors.blue,
-                  onTap: () => context.go('/learning/subjects'),
+                  title: 'Class Routine',
+                  subtitle: 'Manage your weekly schedule',
+                  icon: Icons.calendar_today,
+                  color: Colors.orange,
+                  onTap: () => context.push('/learning/routine'),
                 ),
                 _LearningCard(
                   title: 'Notes',
@@ -42,7 +43,7 @@ class LearningScreen extends StatelessWidget {
                   title: 'Quiz Gen',
                   icon: Icons.quiz,
                   color: Colors.purple,
-                  onTap: () => context.go('/learning/quiz'),
+                  onTap: () => context.go('/learning/quiz/setup'),
                 ),
                 _LearningCard(
                   title: 'Summarizer',
@@ -50,17 +51,18 @@ class LearningScreen extends StatelessWidget {
                   color: Colors.orange,
                   onTap: () => context.go('/learning/summary'),
                 ),
-                _LearningCard(
-                  title: 'Exams',
-                  icon: Icons.timer,
-                  color: Colors.red,
-                  onTap: () => context.go('/learning/exam'),
-                ),
+
                 _LearningCard(
                   title: 'Smart Review',
                   icon: Icons.psychology,
                   color: Colors.teal,
                   onTap: () => context.go('/learning/review'),
+                ),
+                _LearningCard(
+                  title: 'Quiz History',
+                  icon: Icons.history_edu,
+                  color: Colors.blueGrey,
+                  onTap: () => context.go('/learning/quiz/history'),
                 ),
               ],
             ),
@@ -73,12 +75,14 @@ class LearningScreen extends StatelessWidget {
 
 class _LearningCard extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
   const _LearningCard({
     required this.title,
+    this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
@@ -87,37 +91,47 @@ class _LearningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: color.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withOpacity(0.1),
-                color.withOpacity(0.05),
-              ],
-            ),
-          ),
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 32, color: color),
+                child: Icon(icon, color: color, size: 32),
               ),
-              const Gap(16),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  if (subtitle != null) ...[
+                    const Gap(4),
+                    Text(
+                      subtitle!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ],
+                ],
               ),
             ],
           ),

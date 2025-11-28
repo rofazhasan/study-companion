@@ -38,18 +38,27 @@ class RoutineRepository {
     await _isarService.db.writeTxn(() async {
       await _isarService.db.routineBlocks.put(block);
     });
+    await _syncMissionTarget(block.date);
   }
 
   Future<void> updateBlock(RoutineBlock block) async {
     await _isarService.db.writeTxn(() async {
       await _isarService.db.routineBlocks.put(block);
     });
+    await _syncMissionTarget(block.date);
   }
 
   Future<void> deleteBlock(Id id) async {
+    final block = await _isarService.db.routineBlocks.get(id);
+    final date = block?.date;
+    
     await _isarService.db.writeTxn(() async {
       await _isarService.db.routineBlocks.delete(id);
     });
+    
+    if (date != null) {
+      await _syncMissionTarget(date);
+    }
   }
 
   Future<DailyRoutine?> getDailyRoutine(DateTime date) async {
@@ -181,5 +190,26 @@ class RoutineRepository {
 
     dailyRoutine.healthScore = score;
     await saveDailyRoutine(dailyRoutine);
+  Future<void> _syncMissionTarget(DateTime date) async {
+    final blocks = await getBlocksForDate(date);
+    
+    // Count study-related blocks
+    final studyBlockCount = blocks.where((b) => 
+      b.type == BlockType.study || 
+      b.type == BlockType.homework || 
+      b.type == BlockType.revision
+    ).length;
+
+    // Update mission target
+    // If 0 blocks, we might want to keep a minimum or set to 0? 
+    // Let's set a minimum of 1 if they have no blocks, or just sync to count.
+    // If they have 0 blocks, maybe they shouldn't have a study mission? 
+    // For now, let's sync to the count, but if 0, maybe default to 3 (standard challenge) or 1.
+    // User request: "if you have 3 study block you complete one it must see the percentage"
+    // This implies the target should match the schedule.
+    
+    final target = studyBlockCount > 0 ? studyBlockCount : 3; // Default to 3 if no schedule
+    
+    await _missionRepository.updateTarget(date, MissionType.studyBlocks, target);
   }
 }

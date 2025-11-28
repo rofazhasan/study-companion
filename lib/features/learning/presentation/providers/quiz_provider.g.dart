@@ -6,12 +6,12 @@ part of 'quiz_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$quizNotifierHash() => r'374e8bde18fd7d03db2742df64748477fc299184';
+String _$quizNotifierHash() => r'629ef45f2654f83aaa4ae9ad8971080cb936d73b';
 
 /// See also [QuizNotifier].
 @ProviderFor(QuizNotifier)
 final quizNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<QuizNotifier, List<QuizQuestion>>.internal(
+    AsyncNotifierProvider<QuizNotifier, QuizState>.internal(
   QuizNotifier.new,
   name: r'quizNotifierProvider',
   debugGetCreateSourceHash:
@@ -20,6 +20,6 @@ final quizNotifierProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$QuizNotifier = AutoDisposeAsyncNotifier<List<QuizQuestion>>;
+typedef _$QuizNotifier = AsyncNotifier<QuizState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

@@ -30,16 +30,16 @@ class MissionRepository {
     });
   }
 
-  Future<void> createDefaultMission(DateTime date) async {
+  Future<void> createDefaultMission(DateTime date, {int studyBlockCount = 3}) async {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final mission = DailyMission()
       ..date = startOfDay
       ..items = [
         MissionItem()
-          ..title = 'Complete 3 Study Blocks'
+          ..title = 'Complete $studyBlockCount Study Blocks'
           ..xpReward = 50
           ..type = MissionType.studyBlocks
-          ..target = 3
+          ..target = studyBlockCount
           ..isManual = false,
         MissionItem()
           ..title = 'Focus for 60 Minutes'
@@ -74,6 +74,41 @@ class MissionRepository {
         }
         newItems[i] = item;
         changed = true;
+      }
+    }
+
+    if (changed) {
+      mission.items = newItems;
+      await saveMission(mission);
+    }
+  }
+
+  Future<void> updateTarget(DateTime date, MissionType type, int newTarget) async {
+    final mission = await getMissionForDate(date);
+    if (mission == null) {
+      // If mission doesn't exist, create it with the correct target
+      await createDefaultMission(date, studyBlockCount: newTarget);
+      return;
+    }
+
+    bool changed = false;
+    final newItems = List<MissionItem>.from(mission.items);
+
+    for (int i = 0; i < newItems.length; i++) {
+      final item = newItems[i];
+      if (item.type == type) {
+        if (item.target != newTarget) {
+          item.target = newTarget;
+          item.title = 'Complete $newTarget Study Blocks';
+          // Re-evaluate completion
+          if (item.current >= item.target) {
+            item.isCompleted = true;
+          } else {
+            item.isCompleted = false;
+          }
+          newItems[i] = item;
+          changed = true;
+        }
       }
     }
 

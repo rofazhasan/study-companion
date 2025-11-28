@@ -4,18 +4,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/focus_mode/presentation/screens/focus_screen.dart';
 import '../../features/focus_mode/presentation/screens/focus_screen.dart';
 import '../../features/routine/presentation/screens/routine_screen.dart';
-import '../../features/analytics/presentation/screens/analytics_screen.dart';
 import '../../features/learning/presentation/screens/learning_screen.dart';
-import '../../features/learning/presentation/screens/notes_list_screen.dart';
-import '../../features/ai_chat/presentation/screens/chat_screen.dart';
-import '../../features/learning/presentation/screens/quiz_setup_screen.dart';
 import '../../features/learning/presentation/screens/quiz_screen.dart';
+import '../../features/learning/presentation/screens/quiz_setup_screen.dart';
 import '../../features/learning/presentation/screens/summary_screen.dart';
 import '../../features/learning/presentation/screens/subjects_screen.dart';
 import '../../features/learning/presentation/screens/subject_detail_screen.dart';
-import '../../features/learning/presentation/screens/exam_setup_screen.dart';
-import '../../features/learning/presentation/screens/exam_screen.dart';
 import '../../features/learning/presentation/screens/flashcard_review_screen.dart';
+import '../../features/learning/presentation/screens/smart_review_screen.dart';
+import '../../features/learning/presentation/screens/class_routine_screen.dart';
+import '../../features/learning/presentation/screens/flashcard_list_screen.dart';
+import '../../features/learning/presentation/screens/quiz_history_screen.dart';
+import '../../features/learning/presentation/screens/notes_list_screen.dart';
+import '../../features/ai_chat/presentation/screens/chat_screen.dart';
 import '../../features/learning/data/models/subject.dart';
 import '../../features/learning/data/models/quiz_question.dart';
 import '../../features/social/presentation/screens/social_screen.dart';
@@ -28,8 +29,11 @@ import '../../features/settings/presentation/screens/sync_settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
 import '../../features/auth/presentation/providers/firebase_auth_provider.dart';
+import '../../features/analytics/presentation/screens/analytics_screen.dart';
 import '../../core/data/isar_service.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
+
+import 'go_router_refresh_stream.dart';
 
 part 'app_router.g.dart';
 
@@ -45,6 +49,7 @@ GoRouter router(RouterRef ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/focus',
+    refreshListenable: GoRouterRefreshStream(ref.watch(firebaseAuthStateProvider.stream)),
     redirect: (context, state) async {
       // Check Firebase auth state
       final authUser = await ref.read(firebaseAuthStateProvider.future);
@@ -168,23 +173,26 @@ GoRouter router(RouterRef ref) {
                       ),
                     ],
                   ),
+
                   GoRoute(
-                    path: 'exam/setup',
-                    builder: (context, state) => const ExamSetupScreen(),
-                  ),
-                  GoRoute(
-                    path: 'exam/play',
-                    builder: (context, state) {
-                      final extra = state.extra as Map<String, dynamic>;
-                      return ExamScreen(
-                        subjectName: extra['subject'] as String,
-                        questions: extra['questions'] as List<QuizQuestion>,
-                      );
-                    },
+                    path: 'flashcards',
+                    builder: (context, state) => const FlashcardListScreen(),
                   ),
                   GoRoute(
                     path: 'flashcards/review',
                     builder: (context, state) => const FlashcardReviewScreen(),
+                  ),
+                  GoRoute(
+                    path: 'review',
+                    builder: (context, state) => const SmartReviewScreen(),
+                  ),
+                  GoRoute(
+                    path: 'routine',
+                    builder: (context, state) => const ClassRoutineScreen(),
+                  ),
+                  GoRoute(
+                    path: 'quiz/history',
+                    builder: (context, state) => const QuizHistoryScreen(),
                   ),
                 ],
               ),

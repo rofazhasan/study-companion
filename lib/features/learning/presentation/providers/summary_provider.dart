@@ -11,14 +11,23 @@ class SummaryNotifier extends _$SummaryNotifier {
     return const Stream.empty();
   }
 
-  Future<void> generateSummary(String content) async {
+  Future<void> generateSummary(String content, {
+    String tone = 'Standard',
+    String length = 'Medium',
+    String format = 'Paragraph',
+  }) async {
     final aiService = ref.read(aiServiceProvider);
     final summaryService = SummaryService(aiService);
     
     state = const AsyncValue.loading();
     
     var fullText = '';
-    final stream = summaryService.generateSummary(content);
+    final stream = summaryService.generateSummary(
+      content, 
+      tone: tone,
+      length: length,
+      format: format,
+    );
     
     await for (final chunk in stream) {
       fullText += chunk;

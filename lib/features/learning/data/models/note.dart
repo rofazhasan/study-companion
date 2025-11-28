@@ -14,5 +14,7 @@ class Note {
 
   late DateTime updatedAt;
 
+  List<String>? images;
+
   List<double>? embedding;
 }

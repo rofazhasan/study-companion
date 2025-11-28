@@ -6,7 +6,7 @@ part of 'summary_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$summaryNotifierHash() => r'a7d878796f35a5f3120e447067288b64f03e1152';
+String _$summaryNotifierHash() => r'dc04b10235c0af09a6592d7c83b81979f31d7e88';
 
 /// See also [SummaryNotifier].
 @ProviderFor(SummaryNotifier)

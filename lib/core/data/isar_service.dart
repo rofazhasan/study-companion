@@ -4,11 +4,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/focus_mode/data/models/study_session.dart';
 import '../../features/learning/data/models/note.dart';
 import '../../features/learning/data/models/flashcard.dart';
+import '../../features/learning/data/models/saved_exam.dart';
 import '../../features/focus_mode/data/models/routine.dart';
 import '../../features/ai_chat/data/models/chat_message.dart';
 import '../../features/learning/data/models/subject.dart';
 import '../../features/learning/data/models/chapter.dart';
 import '../../features/learning/data/models/exam_result.dart';
+import '../../features/learning/data/models/class_routine.dart';
 
 import '../../features/routine/data/models/routine_block.dart';
 import '../../features/routine/data/models/daily_routine.dart';
@@ -46,6 +48,8 @@ class IsarService {
         DailyMissionSchema,
         UserSchema,
         ExamSchema,
+        SavedExamSchema,
+        ClassRoutineSchema,
       ],
       directory: dir.path,
     );
@@ -84,6 +88,10 @@ class IsarService {
     return await _isar.notes.where().sortByCreatedAtDesc().findAll();
   }
 
+  Future<Note?> getNote(int id) async {
+    return await _isar.notes.get(id);
+  }
+
   Future<void> deleteNote(int id) async {
     await _isar.writeTxn(() async {
       await _isar.notes.delete(id);
@@ -97,6 +105,12 @@ class IsarService {
     });
   }
 
+  Future<void> saveFlashcards(List<Flashcard> flashcards) async {
+    await _isar.writeTxn(() async {
+      await _isar.flashcards.putAll(flashcards);
+    });
+  }
+
   Future<List<Flashcard>> getFlashcards() async {
     return await _isar.flashcards.where().sortByCreatedAtDesc().findAll();
   }
@@ -104,6 +118,23 @@ class IsarService {
   Future<void> deleteFlashcard(int id) async {
     await _isar.writeTxn(() async {
       await _isar.flashcards.delete(id);
+    });
+  }
+
+  // Exams
+  Future<void> saveExam(SavedExam exam) async {
+    await _isar.writeTxn(() async {
+      await _isar.savedExams.put(exam);
+    });
+  }
+  
+  Future<List<SavedExam>> getSavedExams() async {
+    return await _isar.savedExams.where().sortByDateDesc().findAll();
+  }
+
+  Future<void> deleteExam(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.savedExams.delete(id);
     });
   }
 
@@ -274,6 +305,39 @@ class IsarService {
   Future<void> updateUser(User user) async {
     await _isar.writeTxn(() async {
       await _isar.users.put(user);
+    });
+  }
+
+  // Class Routine
+  Future<void> saveClassRoutine(ClassRoutine routine) async {
+    await _isar.writeTxn(() async {
+      await _isar.classRoutines.put(routine);
+    });
+  }
+
+  Future<List<ClassRoutine>> getClassRoutines() async {
+    return await _isar.classRoutines.where().findAll();
+  }
+  
+  Future<List<ClassRoutine>> getClassRoutinesForDay(int dayOfWeek) async {
+    return await _isar.classRoutines
+        .filter()
+        .dayOfWeekEqualTo(dayOfWeek)
+        .sortByStartTime()
+        .findAll();
+  }
+
+  Stream<List<ClassRoutine>> watchClassRoutinesForDay(int dayOfWeek) {
+    return _isar.classRoutines
+        .filter()
+        .dayOfWeekEqualTo(dayOfWeek)
+        .sortByStartTime()
+        .watch(fireImmediately: true);
+  }
+
+  Future<void> deleteClassRoutine(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.classRoutines.delete(id);
     });
   }
 }

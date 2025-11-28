@@ -220,13 +220,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
 
   Widget _buildStep1Identity() {
     return _OnboardingStep(
-      title: "Who are you?",
-      subtitle: "Let's start with your name.",
+      title: "Welcome! 👋",
+      subtitle: "Let's get to know you better.",
       heroWidget: const _Hero3DElement(icon: Icons.person_rounded, color: Color(0xFF6A11CB)),
       children: [
         _buildTextField(
           controller: _nameController,
           label: "Full Name",
+          hint: "e.g., John Doe",
           icon: Icons.person_outline,
           autoFocus: true,
         ),
@@ -236,19 +237,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
 
   Widget _buildStep2Education() {
     return _OnboardingStep(
-      title: "Where do you study?",
-      subtitle: "Help us tailor your experience.",
+      title: "Tell us about your school",
+      subtitle: "This helps us personalize your experience.",
       heroWidget: const _Hero3DElement(icon: Icons.school_rounded, color: Color(0xFF2575FC)),
       children: [
         _buildTextField(
           controller: _classController,
           label: "Class / Grade",
+          hint: "e.g., Grade 10 or Class XII",
           icon: Icons.grade_outlined,
         ),
         const Gap(16),
         _buildTextField(
           controller: _schoolController,
           label: "School Name (Optional)",
+          hint: "e.g., ABC High School",
           icon: Icons.location_city_outlined,
           isRequired: false,
         ),
@@ -258,18 +261,70 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
 
   Widget _buildStep3Contact() {
     return _OnboardingStep(
-      title: "Almost there!",
-      subtitle: "Let's personalize your learning journey.",
-      heroWidget: const _Hero3DElement(icon: Icons.psychology_rounded, color: Color(0xFFFF6D6D)),
+      title: "You're all set!",
+      subtitle: "Let's start your learning journey together.",
+      heroWidget: const _Hero3DElement(icon: Icons.rocket_launch_rounded, color: Color(0xFFFF6D6D)),
       children: [
-        Text(
-          "We're excited to help you learn better! Your profile is almost complete.",
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            color: Colors.grey[700],
-            height: 1.5,
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF6A11CB).withOpacity(0.2)),
           ),
-          textAlign: TextAlign.center,
+          child: Column(
+            children: [
+              Icon(
+                Icons.check_circle,
+                size: 48,
+                color: const Color(0xFF6A11CB),
+              ),
+              const Gap(12),
+              Text(
+                "Your profile is complete!",
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF333333),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(8),
+              Text(
+                "We're excited to help you achieve your learning goals. "
+                "Your personalized study experience starts now!",
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        const Gap(16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.privacy_tip_outlined, size: 20, color: Colors.grey[600]),
+              const Gap(12),
+              Expanded(
+                child: Text(
+                  "All your data is stored securely on your device",
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -326,6 +381,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    String? hint,
     bool isRequired = true,
     TextInputType? inputType,
     bool autoFocus = false,
@@ -335,16 +391,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
       controller: controller,
       autofocus: autoFocus,
       keyboardType: inputType,
-      validator: validator ?? (v) => isRequired && (v == null || v.isEmpty) ? 'Required' : null,
+      validator: validator ?? (v) => isRequired && (v == null || v.isEmpty) ? 'This field is required' : null,
       style: GoogleFonts.inter(fontSize: 16, color: Colors.black87),
       decoration: InputDecoration(
         labelText: label,
+        hintText: hint,
         prefixIcon: Icon(icon, color: const Color(0xFF6A11CB)),
         filled: true,
         fillColor: Colors.white.withOpacity(0.8),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey[200]!)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF6A11CB), width: 2)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.red[300]!)),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.red, width: 2)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0);
