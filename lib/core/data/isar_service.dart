@@ -369,4 +369,10 @@ class IsarService {
   Future<List<BattleHistory>> getBattleHistory() async {
     return await _isar.battleHistorys.where().sortByDateDesc().findAll();
   }
+
+  Future<void> deleteBattleHistory(int id) async {
+    await _isar.writeTxn(() async {
+      await _isar.battleHistorys.delete(id);
+    });
+  }
 }

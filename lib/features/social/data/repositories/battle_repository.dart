@@ -206,8 +206,6 @@ class BattleRepository {
         ..score = player.score
         ..rank = rank
         ..totalPlayers = session.players.length
-        ..rank = rank
-        ..totalPlayers = session.players.length
         ..isWinner = rank == 1
         ..sessionJson = jsonEncode(session.toMap());
         
@@ -215,6 +213,10 @@ class BattleRepository {
     } catch (e) {
       print('Error saving history: $e');
     }
+  }
+
+  Future<void> deleteLocalHistory(int id) async {
+    await _isarService.deleteBattleHistory(id);
   }
 
   // --- 5. Player Actions ---

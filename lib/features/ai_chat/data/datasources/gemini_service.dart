@@ -58,8 +58,8 @@ class GeminiService implements AIService {
     Generate $count multiple-choice questions on "$topic" (Difficulty: $difficulty) in $language.
     Format the output as a JSON list of objects.
     Each object must have:
-    - "question": The question text (use LaTeX for math).
-    - "options": A list of 4 string options.
+    - "question": The question text (use LaTeX for math, enclosed in \$...\$).
+    - "options": A list of 4 string options (use LaTeX for math, enclosed in \$...\$).
     - "correctIndex": The integer index (0-3) of the correct option.
     - "explanation": A brief explanation of the answer.
     

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/social_provider.dart';
 import '../../data/repositories/social_repository.dart';
 import '../../data/repositories/battle_repository.dart';
@@ -323,7 +324,12 @@ class SocialScreen extends ConsumerWidget {
                 if (user == null) return;
                 
                 // Fetch user name
-                final name = ref.read(userNotifierProvider).value?.name ?? 'Host';
+                String name = ref.read(userNotifierProvider).value?.name ?? '';
+                if (name.isEmpty) {
+                  // Fallback: Fetch from Firestore directly
+                  final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+                  name = userDoc.data()?['name'] ?? 'Unknown Host';
+                }
 
                 try {
                   final battleId = await ref.read(battleRepositoryProvider).createBattle(

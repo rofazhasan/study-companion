@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../providers/social_provider.dart';
-import '../../data/models/leaderboard_entry.dart';
-import '../../data/models/battle_history.dart';
+// import '../../data/models/leaderboard_entry.dart';
+// import '../../data/models/battle_history.dart';
+import '../../data/repositories/battle_repository.dart';
 
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
@@ -147,25 +148,42 @@ class _BattleHistoryList extends StatelessWidget {
           itemCount: history.length,
           itemBuilder: (context, index) {
             final item = history[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                onTap: () {
-                  context.go('/social/leaderboard/history', extra: item);
-                },
-                leading: CircleAvatar(
-                  backgroundColor: item.isWinner ? Colors.amber : Colors.grey,
-                  child: Icon(item.isWinner ? Icons.emoji_events : Icons.sports_kabaddi, color: Colors.white),
-                ),
-                title: Text(item.topic, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(DateFormat.yMMMd().add_jm().format(item.date)),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('${item.score} pts', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text('Rank: ${item.rank}/${item.totalPlayers}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  ],
+            return Dismissible(
+              key: Key(item.id.toString()),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                color: Colors.red,
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              onDismissed: (direction) {
+                // Optimistic update handled by stream, but we should call delete
+                ref.read(battleRepositoryProvider).deleteLocalHistory(item.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Battle history deleted')),
+                );
+              },
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  onTap: () {
+                    context.go('/social/leaderboard/history', extra: item);
+                  },
+                  leading: CircleAvatar(
+                    backgroundColor: item.isWinner ? Colors.amber : Colors.grey,
+                    child: Icon(item.isWinner ? Icons.emoji_events : Icons.sports_kabaddi, color: Colors.white),
+                  ),
+                  title: Text(item.topic, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(DateFormat.yMMMd().add_jm().format(item.date)),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${item.score} pts', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('Rank: ${item.rank}/${item.totalPlayers}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
                 ),
               ),
             );

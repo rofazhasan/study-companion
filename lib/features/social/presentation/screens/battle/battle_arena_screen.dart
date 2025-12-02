@@ -122,9 +122,9 @@ class _BattleArenaScreenState extends ConsumerState<BattleArenaScreen> with Tick
                   },
                 ),
                 
-                // Main Content
+                // Main Content (Scrollable to prevent overflow)
                 Expanded(
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +142,7 @@ class _BattleArenaScreenState extends ConsumerState<BattleArenaScreen> with Tick
                             child: Center(child: _buildQuestionContent(question.question)),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(height: 24),
                         
                         // Options Grid
                         ...List.generate(4, (index) {
@@ -196,7 +196,6 @@ class _BattleArenaScreenState extends ConsumerState<BattleArenaScreen> with Tick
                             ),
                           );
                         }),
-                        const Spacer(),
                       ],
                     ),
                   ),
