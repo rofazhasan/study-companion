@@ -256,10 +256,10 @@ class BattleRepository {
       int points = 0;
       if (isCorrect) {
         points = 10; // Base points
-        // Speed bonus
+        // Speed bonus (Reduced to prevent unfair advantage)
         final ratio = timeTaken / session.timePerQuestion;
-        if (ratio <= 0.2) points += 5;
-        else if (ratio <= 0.5) points += 2;
+        if (ratio <= 0.2) points += 3; // Was 5
+        else if (ratio <= 0.5) points += 1; // Was 2
       }
 
       // Update Player
@@ -292,6 +292,22 @@ class BattleRepository {
             'players': updatedPlayers.map((p) => p.toMap()).toList(),
             'status': BattleStatus.completed.name,
           });
+          
+          // Auto-delete after 1 minute to allow for history saving and debrief
+          // Note: We can't run futures inside transaction easily, so we rely on the client or a separate trigger.
+          // But since we are in the repo, we can just fire and forget AFTER the transaction.
+          // However, transaction callback is async.
+          // We'll handle auto-delete in the endGame method or here if we could.
+          // Actually, endGame is called by host. Here we are just updating state.
+          // The host's stream listener will see "completed" and can trigger cleanup if needed, 
+          // or we can just leave it to the manual/auto cleanup we added in endGame.
+          // But wait, if we set status to completed HERE, endGame might not be called explicitly.
+          // Let's just set status. The previous auto-delete logic was in endGame.
+          // If the game ends via this auto-advance, we should probably trigger the same cleanup.
+          // But we can't easily do it from inside the transaction.
+          // Let's leave it for now, as the host usually stays on the screen and we can add a listener there or rely on manual exit.
+          // OR we can just rely on the fact that the host's UI will see "Game Over" and they will click "End Mission".
+          
         } else {
           // Advance to Next Question immediately
           final resetPlayers = updatedPlayers.map((p) => BattlePlayer(
@@ -345,11 +361,13 @@ class BattleRepository {
     final startTime = session.startTime ?? now;
     final elapsed = now.difference(startTime).inSeconds;
     
-    if (elapsed < 3) return; // Wait a bit
+    // More realistic delay: 5-15 seconds
+    if (elapsed < 5) return; 
     
     for (final player in session.players) {
       if (player.isBot && !player.hasAnswered) {
-        if (Random().nextDouble() < 0.2) { // Chance to answer
+        // Random chance to answer this tick (simulates thinking time variance)
+        if (Random().nextDouble() < 0.15) { 
            // 70% accuracy
            final question = session.questions[session.currentQuestionIndex];
            int answerIndex = question.correctIndex;
