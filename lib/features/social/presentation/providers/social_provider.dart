@@ -16,7 +16,7 @@ class SocialNotifier extends _$SocialNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       // Sync groups from Firestore on load (handles reinstall case)
-      // ref.read(socialRepositoryProvider).startGroupSync(user.uid);
+      ref.read(socialRepositoryProvider).startGroupSync(user.uid);
     }
     return ref.watch(socialRepositoryProvider).watchGroups();
   }

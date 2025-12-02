@@ -117,7 +117,29 @@ class SocialRepository {
     }
 
     if (members.contains(userId)) {
-      throw Exception('Already a member');
+      // Already a member on server, but maybe missing locally?
+      // Restore it!
+      final group = StudyGroup()
+        ..groupId = data['id']
+        ..name = data['name']
+        ..topic = data['topic']
+        ..joinCode = data['joinCode']
+        ..memberCount = data['memberCount'] as int
+        ..memberIds = List<String>.from(members)
+        ..creatorId = data['creatorId'] ?? (members.isNotEmpty ? members[0] : userId)
+        ..adminIds = List<String>.from(data['adminIds'] ?? [])
+        ..bannedIds = List<String>.from(data['bannedIds'] ?? [])
+        ..createdAt = DateTime.parse(data['createdAt'])
+        ..isSynced = true;
+
+      await _isarService.db.writeTxn(() async {
+        await _isarService.db.studyGroups.put(group);
+      });
+      
+      // Force sync to be sure
+      refreshSync(userId);
+      
+      throw Exception('Group restored! You were already a member.');
     }
 
     // 2. Add user to Firestore group
