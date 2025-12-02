@@ -7,6 +7,7 @@ import 'package:study_companion/features/learning/data/models/saved_exam.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'quiz_detail_screen.dart';
 
 class QuizHistoryScreen extends ConsumerStatefulWidget {
   const QuizHistoryScreen({super.key});
@@ -87,6 +88,19 @@ class _QuizHistoryScreenState extends ConsumerState<QuizHistoryScreen> {
                             onPressed: () => _generatePdf(exam),
                             icon: const Icon(Icons.picture_as_pdf),
                             label: const Text('Export PDF'),
+                          ),
+                          const Gap(8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => QuizDetailScreen(exam: exam),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.visibility),
+                            label: const Text('View Details'),
                           ),
                         ],
                       ),
@@ -184,6 +198,7 @@ class _QuizHistoryScreenState extends ConsumerState<QuizHistoryScreen> {
                         '${String.fromCharCode(65 + optIndex)}. $opt ${isCorrect ? '(Correct)' : ''}',
                         style: pw.TextStyle(
                           color: isCorrect ? PdfColors.green : PdfColors.black,
+                          font: isCorrect ? fontBold : fontRegular, // Bold correct answer
                         ),
                       ),
                     );
