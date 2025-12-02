@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'ai_service.dart';
 import '../../../learning/data/models/quiz_question.dart';
@@ -54,8 +55,26 @@ class GeminiService implements AIService {
   }) async {
     if (apiKey.isEmpty) throw Exception('API Key not set');
 
+    // Inject randomness to ensure variety
+    final random = Random();
+    final focusAreas = [
+      'theoretical concepts',
+      'practical applications',
+      'historical context',
+      'problem solving',
+      'advanced nuances',
+      'fundamental principles',
+      'real-world examples',
+      'comparative analysis'
+    ];
+    final focus = focusAreas[random.nextInt(focusAreas.length)];
+    final seed = random.nextInt(1000000);
+
     final prompt = '''
-    Generate $count multiple-choice questions on "$topic" (Difficulty: $difficulty) in $language.
+    Generate $count unique and diverse multiple-choice questions on "$topic" (Difficulty: $difficulty) in $language.
+    Focus area: $focus.
+    Random seed: $seed (Use this to vary the questions from previous requests).
+    
     Format the output as a JSON list of objects.
     Each object must have:
     - "question": The question text (use LaTeX for math, enclosed in \$...\$).
