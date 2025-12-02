@@ -144,6 +144,15 @@ class SocialRepository {
     await _isarService.db.writeTxn(() async {
       await _isarService.db.studyGroups.put(group);
     });
+
+    // 4. Force refresh sync to pick up the new group immediately
+    refreshSync(userId);
+  }
+
+  Future<void> refreshSync(String userId) async {
+    print('DEBUG: Force refreshing sync for user $userId');
+    stopGroupSync();
+    startGroupSync(userId);
   }
 
   StreamSubscription<QuerySnapshot>? _groupSubscription;

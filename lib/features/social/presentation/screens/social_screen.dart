@@ -52,57 +52,67 @@ class SocialScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final group = groups[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    child: Text(group.name[0].toUpperCase()),
-                  ),
-                  title: Text(group.name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${group.topic} • ${group.memberCount} members'),
-                      Text('Code: ${group.joinCode}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                    ],
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      StreamBuilder<int>(
-                        stream: ref.read(socialRepositoryProvider).watchUnreadCount(group.groupId, FirebaseAuth.instance.currentUser?.uid ?? ''),
-                        builder: (context, snapshot) {
-                          final count = snapshot.data ?? 0;
-                          if (count == 0) return const SizedBox.shrink();
-                          return Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              count.toString(),
-                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          );
-                        },
-                      ),
-                      const Gap(4),
-                      const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                    ],
-                  ),
-                  onTap: () {
-                    context.push('/social/chat/${group.groupId}', extra: group.name);
-                  },
-                ),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                await ref.read(socialRepositoryProvider).refreshSync(user.uid);
+                // Also refresh the groups list provider
+                ref.invalidate(socialNotifierProvider);
+              }
             },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                final group = groups[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Text(group.name[0].toUpperCase()),
+                    ),
+                    title: Text(group.name),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${group.topic} • ${group.memberCount} members'),
+                        Text('Code: ${group.joinCode}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                      ],
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        StreamBuilder<int>(
+                          stream: ref.read(socialRepositoryProvider).watchUnreadCount(group.groupId, FirebaseAuth.instance.currentUser?.uid ?? ''),
+                          builder: (context, snapshot) {
+                            final count = snapshot.data ?? 0;
+                            if (count == 0) return const SizedBox.shrink();
+                            return Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                count.toString(),
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            );
+                          },
+                        ),
+                        const Gap(4),
+                        const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                    onTap: () {
+                      context.push('/social/chat/${group.groupId}', extra: group.name);
+                    },
+                  ),
+                );
+              },
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -269,6 +269,16 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Force Sync',
+            onPressed: () async {
+              if (_currentUserId != null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Syncing...')));
+                await ref.read(socialRepositoryProvider).refreshSync(_currentUserId!);
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
               Navigator.push(
