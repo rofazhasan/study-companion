@@ -180,14 +180,7 @@ class BattleRepository {
     });
     
     // Auto-delete after 1 minute to allow for history saving and debrief
-    Future.delayed(const Duration(minutes: 1), () async {
-      try {
-        await deleteBattle(battleId);
-        print('Battle $battleId auto-deleted from cloud.');
-      } catch (e) {
-        print('Error auto-deleting battle: $e');
-      }
-    });
+    _scheduleAutoDelete(battleId);
   }
 
   Future<void> deleteBattle(String battleId) async {
@@ -234,19 +227,19 @@ class BattleRepository {
 
   // --- 5. Player Actions ---
   Future<void> submitAnswer(String battleId, String userId, int answerIndex, double timeTaken) async {
-    await _firestore.runTransaction((transaction) async {
+    final gameEnded = await _firestore.runTransaction<bool>((transaction) async {
       final docRef = _firestore.collection('battles').doc(battleId);
       final snapshot = await transaction.get(docRef);
-      if (!snapshot.exists) return;
+      if (!snapshot.exists) return false;
 
       final session = BattleSession.fromMap(snapshot.data()!);
       
       // Find player
       final playerIndex = session.players.indexWhere((p) => p.userId == userId);
-      if (playerIndex == -1) return;
+      if (playerIndex == -1) return false;
       
       final player = session.players[playerIndex];
-      if (player.hasAnswered) return; // Already answered
+      if (player.hasAnswered) return false; // Already answered
 
       // Check correctness
       final question = session.questions[session.currentQuestionIndex];
@@ -293,20 +286,8 @@ class BattleRepository {
             'status': BattleStatus.completed.name,
           });
           
-          // Auto-delete after 1 minute to allow for history saving and debrief
-          // Note: We can't run futures inside transaction easily, so we rely on the client or a separate trigger.
-          // But since we are in the repo, we can just fire and forget AFTER the transaction.
-          // However, transaction callback is async.
-          // We'll handle auto-delete in the endGame method or here if we could.
-          // Actually, endGame is called by host. Here we are just updating state.
-          // The host's stream listener will see "completed" and can trigger cleanup if needed, 
-          // or we can just leave it to the manual/auto cleanup we added in endGame.
-          // But wait, if we set status to completed HERE, endGame might not be called explicitly.
-          // Let's just set status. The previous auto-delete logic was in endGame.
-          // If the game ends via this auto-advance, we should probably trigger the same cleanup.
-          // But we can't easily do it from inside the transaction.
-          // Let's leave it for now, as the host usually stays on the screen and we can add a listener there or rely on manual exit.
-          // OR we can just rely on the fact that the host's UI will see "Game Over" and they will click "End Mission".
+          // Auto-delete is now handled by the return value of this transaction
+          // which triggers _scheduleAutoDelete in the main function body.
           
         } else {
           // Advance to Next Question immediately
@@ -334,6 +315,31 @@ class BattleRepository {
         transaction.update(docRef, {
           'players': updatedPlayers.map((p) => p.toMap()).toList(),
         });
+      }
+      
+      // Check if game ended (status is completed)
+      // We can't check status directly here as we just updated it, but we know if allAnswered and nextIndex >= length
+      if (allAnswered) {
+         final nextIndex = session.currentQuestionIndex + 1;
+         return nextIndex >= session.questions.length;
+      }
+      return false;
+    });
+    
+    // Trigger auto-delete if game ended
+    if (gameEnded) {
+      _scheduleAutoDelete(battleId);
+    }
+  }
+  
+  void _scheduleAutoDelete(String battleId) {
+    print('Scheduling auto-delete for battle $battleId');
+    Future.delayed(const Duration(minutes: 1), () async {
+      try {
+        await deleteBattle(battleId);
+        print('Battle $battleId auto-deleted from cloud.');
+      } catch (e) {
+        print('Error auto-deleting battle: $e');
       }
     });
   }
