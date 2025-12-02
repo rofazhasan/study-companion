@@ -267,9 +267,45 @@ class BattleRepository {
       final updatedPlayers = List<BattlePlayer>.from(session.players);
       updatedPlayers[playerIndex] = updatedPlayer;
       
-      transaction.update(docRef, {
-        'players': updatedPlayers.map((p) => p.toMap()).toList(),
-      });
+      // Check if ALL players have answered
+      final allAnswered = updatedPlayers.every((p) => p.hasAnswered);
+
+      if (allAnswered) {
+        final nextIndex = session.currentQuestionIndex + 1;
+        
+        if (nextIndex >= session.questions.length) {
+          // End Game
+          transaction.update(docRef, {
+            'players': updatedPlayers.map((p) => p.toMap()).toList(),
+            'status': BattleStatus.completed.name,
+          });
+        } else {
+          // Advance to Next Question immediately
+          final resetPlayers = updatedPlayers.map((p) => BattlePlayer(
+            userId: p.userId,
+            name: p.name,
+            avatarUrl: p.avatarUrl,
+            score: p.score,
+            streak: p.streak,
+            hasAnswered: false, // Reset
+            answerTime: 0.0,   // Reset
+            isBot: p.isBot,
+            answers: p.answers,
+            answerTimes: p.answerTimes,
+          )).toList();
+
+          transaction.update(docRef, {
+            'players': resetPlayers.map((p) => p.toMap()).toList(),
+            'currentQuestionIndex': nextIndex,
+            'startTime': DateTime.now().toIso8601String(),
+          });
+        }
+      } else {
+        // Just update players
+        transaction.update(docRef, {
+          'players': updatedPlayers.map((p) => p.toMap()).toList(),
+        });
+      }
     });
   }
   

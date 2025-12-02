@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../data/models/battle_models.dart';
 import '../../../data/repositories/battle_repository.dart';
 import '../../providers/battle_provider.dart';
@@ -90,7 +91,7 @@ class BattleLobbyScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('SQUAD (${session.players.length})', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-                      if (session.creatorId == session.players.first.userId)
+                      if (session.creatorId == FirebaseAuth.instance.currentUser?.uid)
                         TextButton.icon(
                           onPressed: () => ref.read(battleRepositoryProvider).addBot(battleId),
                           icon: const Icon(Icons.smart_toy, size: 16),
@@ -133,7 +134,7 @@ class BattleLobbyScreen extends ConsumerWidget {
                   ),
                   
                   // Start Button
-                  if (session.creatorId == session.players.first.userId) ...[
+                  if (session.creatorId == FirebaseAuth.instance.currentUser?.uid) ...[
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
@@ -159,7 +160,32 @@ class BattleLobbyScreen extends ConsumerWidget {
           );
         },
         loading: () => const Scaffold(backgroundColor: Color(0xFF1A1A2E), body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent))),
-        error: (e, st) => Scaffold(backgroundColor: Color(0xFF1A1A2E), body: Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red)))),
+        error: (e, st) {
+          // Handle "Battle not found" (deleted) gracefully
+          if (e.toString().contains('Battle not found') || e.toString().contains('null')) {
+             return Scaffold(
+               backgroundColor: const Color(0xFF1A1A2E),
+               body: Center(
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.center,
+                   children: [
+                     const Icon(Icons.info_outline, size: 80, color: Colors.orange),
+                     const SizedBox(height: 20),
+                     const Text('Mission Aborted', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                     const SizedBox(height: 10),
+                     const Text('The host has ended the battle.', style: TextStyle(color: Colors.grey)),
+                     const SizedBox(height: 30),
+                     ElevatedButton(
+                       onPressed: () => context.go('/social'),
+                       child: const Text('RETURN TO BASE'),
+                     ),
+                   ],
+                 ),
+               ),
+             );
+          }
+          return Scaffold(backgroundColor: const Color(0xFF1A1A2E), body: Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))));
+        },
       ),
     );
   }
