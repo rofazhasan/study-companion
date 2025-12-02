@@ -95,6 +95,30 @@ class AnalyticsRepository {
       return sum;
     });
   }
+  Future<Map<int, int>> getHourlyFocusTime(DateTime date) async {
+    // Get sessions for the specific date (00:00 to 23:59:59)
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
+    
+    final sessions = await _isarService.getSessionsByDateRange(start, end);
+    final Map<int, int> hourlyMap = {};
+
+    // Initialize all hours with 0
+    for (int i = 0; i < 24; i++) {
+      hourlyMap[i] = 0;
+    }
+
+    for (var session in sessions) {
+      if (session.phase == 'focus' && session.isCompleted) {
+        // Simple approach: attribute entire duration to the start hour
+        // For more precision, we could split across hours, but start hour is usually sufficient for trends
+        final hour = session.startTime.hour;
+        hourlyMap[hour] = (hourlyMap[hour] ?? 0) + session.durationSeconds;
+      }
+    }
+    return hourlyMap;
+  }
+
   Future<void> deleteSession(int id) {
     return _isarService.deleteSession(id);
   }

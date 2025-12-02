@@ -1,0 +1,26 @@
+Running Gradle task 'assembleRelease'...                        
+lib/features/social/data/repositories/social_repository.dart:80:7: Error: 'rethrow' can only be used in catch clauses.
+      rethrow;
+      ^^^^^^^
+lib/features/social/data/repositories/social_repository.dart:60:5: Error: A try block must be followed by an 'on', 'catch', or 'finally' clause.
+Try adding either a catch or finally clause, or remove the try statement.
+    try {
+    ^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command '/Users/md.rofazhasanrafiu/AndroidStudioProjects/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+Running Gradle task 'assembleRelease'...                            8.0s
+Gradle task assembleRelease failed with exit code 1

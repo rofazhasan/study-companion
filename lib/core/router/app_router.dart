@@ -24,9 +24,13 @@ import '../../features/learning/data/models/quiz_question.dart';
 import '../../features/social/presentation/screens/social_screen.dart';
 import '../../features/social/presentation/screens/group_chat_screen.dart';
 import '../../features/social/presentation/screens/leaderboard_screen.dart';
-import '../../features/social/presentation/screens/battle_lobby_screen.dart';
-import '../../features/social/presentation/screens/battle_screen.dart';
+import '../../features/social/presentation/screens/battle/battle_lobby_screen.dart';
+import '../../features/social/presentation/screens/battle/battle_arena_screen.dart';
+import '../../features/social/presentation/screens/battle/battle_result_screen.dart';
+import '../../features/social/presentation/screens/battle/battle_history_detail_screen.dart';
+import '../../features/social/data/models/battle_history.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/settings/presentation/providers/user_provider.dart';
 import '../../features/settings/presentation/screens/sync_settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
@@ -38,11 +42,13 @@ import '../widgets/scaffold_with_nav_bar.dart';
 
 import 'go_router_refresh_stream.dart';
 
+import '../../core/services/notification_service.dart';
+
 part 'app_router.g.dart';
 
 @riverpod
 GoRouter router(RouterRef ref) {
-  final rootNavigatorKey = GlobalKey<NavigatorState>();
+  final rootNavigatorKey = NotificationService.navigatorKey;
   final focusNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'focus');
   final routineNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'routine');
   final learningNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'learning');
@@ -82,10 +88,23 @@ GoRouter router(RouterRef ref) {
       if (isAuthenticated) {
         if (isGoingToAuth || isGoingToSplash) {
           // Already authenticated, check if profile exists
-          final isar = ProviderScope.containerOf(context).read(isarServiceProvider);
+          final container = ProviderScope.containerOf(context);
+          final isar = container.read(isarServiceProvider);
           final localUser = await isar.getUser();
           
           if (localUser == null) {
+            // Try to sync from Firestore before forcing onboarding
+            // We need to use the container to read the provider since we are in a callback
+            // Note: We need to import user_provider.dart
+            try {
+               final userNotifier = container.read(userNotifierProvider.notifier);
+               final synced = await userNotifier.syncUserFromFirestore(authUser.uid);
+               if (synced) {
+                 return '/focus';
+               }
+            } catch (e) {
+              print('Router sync failed: $e');
+            }
             return '/onboarding';
           } else {
             return '/focus';
@@ -98,6 +117,18 @@ GoRouter router(RouterRef ref) {
           final localUser = await isar.getUser();
           if (localUser != null) {
             return '/focus';
+          } else {
+             // Try to sync here as well, just in case
+            try {
+               final container = ProviderScope.containerOf(context);
+               final userNotifier = container.read(userNotifierProvider.notifier);
+               final synced = await userNotifier.syncUserFromFirestore(authUser.uid);
+               if (synced) {
+                 return '/focus';
+               }
+            } catch (e) {
+              print('Router sync failed: $e');
+            }
           }
         }
       }
@@ -225,6 +256,50 @@ GoRouter router(RouterRef ref) {
               GoRoute(
                 path: '/social',
                 builder: (context, state) => const SocialScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'chat/:groupId',
+                    builder: (context, state) {
+                      final groupId = state.pathParameters['groupId']!;
+                      final groupName = state.extra as String? ?? 'Group Chat';
+                      return GroupChatScreen(groupId: groupId, groupName: groupName);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'leaderboard',
+                    builder: (context, state) => const LeaderboardScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'history',
+                        builder: (context, state) {
+                          final history = state.extra as BattleHistory;
+                          return BattleHistoryDetailScreen(history: history);
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'battle/:battleId/lobby',
+                    builder: (context, state) {
+                      final battleId = state.pathParameters['battleId']!;
+                      return BattleLobbyScreen(battleId: battleId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'battle/:battleId/arena',
+                    builder: (context, state) {
+                      final battleId = state.pathParameters['battleId']!;
+                      return BattleArenaScreen(battleId: battleId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'battle/:battleId/result',
+                    builder: (context, state) {
+                      final battleId = state.pathParameters['battleId']!;
+                      return BattleResultScreen(battleId: battleId);
+                    },
+                  ),
+                ],
               ),
             ],
           ),

@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/data/isar_service.dart';
 import '../../../../core/presentation/widgets/three_d_background.dart';
 import '../providers/firebase_auth_provider.dart';
+import '../../../settings/presentation/providers/user_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -64,13 +66,29 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         );
         
         if (mounted) {
-          final isar = ref.read(isarServiceProvider);
-          final localUser = await isar.getUser();
-          
-          if (localUser == null) {
-            context.go('/onboarding');
-          } else {
-            context.go('/focus');
+          final user = auth.FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            // Try to sync from Firestore
+            print('Login successful, attempting sync for ${user.uid}');
+            final synced = await ref.read(userNotifierProvider.notifier).syncUserFromFirestore(user.uid);
+            print('Sync result: $synced');
+            
+            if (synced) {
+              if (mounted) context.go('/focus');
+            } else {
+              // Check if local user exists (fallback)
+              final isar = ref.read(isarServiceProvider);
+              final localUser = await isar.getUser();
+              print('Local user exists: ${localUser != null}');
+              
+              if (mounted) {
+                if (localUser == null) {
+                  context.go('/onboarding');
+                } else {
+                  context.go('/focus');
+                }
+              }
+            }
           }
         }
       }
@@ -107,12 +125,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       await ref.read(firebaseAuthStateProvider.notifier).signInWithGoogle();
       if (mounted) {
-        final isar = ref.read(isarServiceProvider);
-        final localUser = await isar.getUser();
-        if (localUser == null) {
-          context.go('/onboarding');
-        } else {
-          context.go('/focus');
+        final user = auth.FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final synced = await ref.read(userNotifierProvider.notifier).syncUserFromFirestore(user.uid);
+          
+          if (synced) {
+            if (mounted) context.go('/focus');
+          } else {
+            final isar = ref.read(isarServiceProvider);
+            final localUser = await isar.getUser();
+            if (mounted) {
+              if (localUser == null) {
+                context.go('/onboarding');
+              } else {
+                context.go('/focus');
+              }
+            }
+          }
         }
       }
     } catch (e) {

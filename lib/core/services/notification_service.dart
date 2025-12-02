@@ -1,58 +1,104 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
-part 'notification_service.g.dart';
-
-@Riverpod(keepAlive: true)
-NotificationService notificationService(NotificationServiceRef ref) {
-  return NotificationService();
-}
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
-  
   factory NotificationService() {
     return _instance;
   }
-  
   NotificationService._internal();
-  final fln.FlutterLocalNotificationsPlugin _notificationsPlugin =
-      fln.FlutterLocalNotificationsPlugin();
+
+  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  
+  // Global key to access navigator context for navigation
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   Future<void> init() async {
-    const fln.AndroidInitializationSettings initializationSettingsAndroid =
-        fln.AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const fln.InitializationSettings initializationSettings =
-        fln.InitializationSettings(android: initializationSettingsAndroid);
-
-    await _notificationsPlugin.initialize(initializationSettings);
     tz.initializeTimeZones();
-    print('NotificationService: Initialized. Local timezone: ${tz.local.name}');
     
-    // Load preference
-    // Note: In a real app, we might inject SharedPreferences or use a provider.
-    // For simplicity, we'll assume enabled by default or check prefs here if possible.
-    // But since this is a service, let's add a method to set enabled state.
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/launcher_icon');
+
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
+      requestSoundPermission: true,
+      requestBadgePermission: true,
+      requestAlertPermission: true,
+    );
+
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+    );
+
+    await _notificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _onNotificationTap,
+    );
   }
 
+  void _onNotificationTap(NotificationResponse response) {
+    if (response.payload != null && response.payload!.startsWith('group:')) {
+      final groupId = response.payload!.split(':')[1];
+      // Navigate to group chat
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        GoRouter.of(context).push('/social/chat/$groupId');
+      }
+    }
+  }
+
+  Future<void> showMessageNotification({
+    required String id,
+    required String title,
+    required String body,
+    required String groupId,
+  }) async {
+    if (!_isEnabled) return;
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'message_channel',
+      'Messages',
+      channelDescription: 'Notifications for new messages',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+    );
+    
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+        
+    // Use hashcode of ID for integer ID, or random
+    await _notificationsPlugin.show(
+      id.hashCode,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: 'group:$groupId',
+    );
+  }
+  // Settings
   bool _isEnabled = true;
-
-  void setEnabled(bool enabled) {
-    _isEnabled = enabled;
-  }
-
   bool get isEnabled => _isEnabled;
 
-  Future<void> requestPermissions() async {
-    final fln.AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-        _notificationsPlugin.resolvePlatformSpecificImplementation<
-            fln.AndroidFlutterLocalNotificationsPlugin>();
+  void setEnabled(bool value) {
+    _isEnabled = value;
+  }
 
-    await androidImplementation?.requestNotificationsPermission();
+  Future<void> requestPermissions() async {
+    await _notificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    await _notificationsPlugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
   }
 
   Future<void> showTimerNotification({
@@ -62,29 +108,22 @@ class NotificationService {
   }) async {
     if (!_isEnabled) return;
 
-    final fln.AndroidNotificationDetails androidPlatformChannelSpecifics =
-        fln.AndroidNotificationDetails(
+    final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'timer_channel',
-      'Timer Notifications',
-      channelDescription: 'Shows active timer status',
-      importance: fln.Importance.low,
-      priority: fln.Priority.low,
+      'Timer',
+      channelDescription: 'Active timer notifications',
+      importance: Importance.low,
+      priority: Priority.low,
       ongoing: true,
-      autoCancel: false,
       showWhen: true,
       usesChronometer: endTime != null,
-      chronometerCountDown: endTime != null,
       when: endTime?.millisecondsSinceEpoch,
-      color: Colors.deepPurple,
-      subText: 'Stay Focused',
-      icon: 'ic_notification', // Use custom notification icon
     );
-
-    final fln.NotificationDetails platformChannelSpecifics =
-        fln.NotificationDetails(android: androidPlatformChannelSpecifics);
-
+    
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+    
     await _notificationsPlugin.show(
-      0, // Notification ID
+      0, // Timer ID
       title,
       body,
       platformChannelSpecifics,
@@ -96,73 +135,56 @@ class NotificationService {
     required String body,
     required DateTime endTime,
   }) async {
-    print('NotificationService: Scheduling completion notification for $endTime');
-    final fln.AndroidNotificationDetails androidPlatformChannelSpecifics =
-        fln.AndroidNotificationDetails(
-      'timer_completion_channel',
-      'Timer Completion',
-      channelDescription: 'Notifies when timer finishes',
-      importance: fln.Importance.high,
-      priority: fln.Priority.high,
-      playSound: true,
-      enableVibration: true,
-      color: Colors.deepPurple,
-      icon: 'ic_notification',
-    );
-
-    final fln.NotificationDetails platformChannelSpecifics =
-        fln.NotificationDetails(android: androidPlatformChannelSpecifics);
+    if (!_isEnabled) return;
 
     await _notificationsPlugin.zonedSchedule(
-      1, // Different ID for completion notification
+      1, // Completion ID
       title,
       body,
       tz.TZDateTime.from(endTime, tz.local),
-      platformChannelSpecifics,
-      androidScheduleMode: fln.AndroidScheduleMode.exactAllowWhileIdle,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'timer_channel',
+          'Timer',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 
+  Future<void> cancelNotification() async {
+    await _notificationsPlugin.cancel(0);
+    await _notificationsPlugin.cancel(1);
+  }
+
   Future<void> scheduleExamAlarm({
+    required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
   }) async {
-    print('NotificationService: Scheduling exam alarm for $scheduledDate');
-    
-    // Create a unique ID based on time to allow multiple alarms
-    final id = (scheduledDate.millisecondsSinceEpoch / 1000).round().remainder(100000);
-
-    final fln.AndroidNotificationDetails androidPlatformChannelSpecifics =
-        fln.AndroidNotificationDetails(
-      'exam_alarm_channel',
-      'Exam Alarms',
-      channelDescription: 'Alarms for upcoming exams',
-      importance: fln.Importance.max,
-      priority: fln.Priority.max,
-      playSound: true,
-      enableVibration: true,
-      audioAttributesUsage: fln.AudioAttributesUsage.alarm,
-      color: Colors.red,
-      icon: 'ic_notification',
-      fullScreenIntent: true, // Show even if locked
-    );
-
-    final fln.NotificationDetails platformChannelSpecifics =
-        fln.NotificationDetails(android: androidPlatformChannelSpecifics);
+    if (!_isEnabled) return;
 
     await _notificationsPlugin.zonedSchedule(
       id,
       title,
       body,
       tz.TZDateTime.from(scheduledDate, tz.local),
-      platformChannelSpecifics,
-      androidScheduleMode: fln.AndroidScheduleMode.exactAllowWhileIdle,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'exam_channel',
+          'Exams',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
-
-  Future<void> cancelNotification() async {
-    await _notificationsPlugin.cancel(0);
-    await _notificationsPlugin.cancel(1); // Cancel scheduled completion too
-  }
 }
+
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+});

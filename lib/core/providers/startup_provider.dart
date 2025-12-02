@@ -13,9 +13,19 @@ part 'startup_provider.g.dart';
 @Riverpod(keepAlive: true)
 Future<void> startup(StartupRef ref) async {
   // 1. Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // 1. Initialize Firebase
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    // Ignore duplicate app error if it happens despite the check
+    if (!e.toString().contains('duplicate-app')) {
+      rethrow;
+    }
+  }
 
   // Wait for auth to be ready (restored)
   await FirebaseAuth.instance.authStateChanges().first;

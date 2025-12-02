@@ -1,54 +1,43 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../data/models/battle_match.dart';
-import '../../data/datasources/mock_social_service.dart';
-import '../../presentation/providers/social_provider.dart';
+import '../../data/models/battle_models.dart';
+import '../../data/repositories/battle_repository.dart';
 
 part 'battle_provider.g.dart';
 
 @riverpod
-class BattleNotifier extends _$BattleNotifier {
-  Timer? _opponentTimer;
-  final _random = Random();
+Stream<BattleSession> battleSession(BattleSessionRef ref, String battleId) {
+  return ref.watch(battleRepositoryProvider).streamBattle(battleId);
+}
 
+@riverpod
+class BattleController extends _$BattleController {
   @override
-  BattleMatch? build() {
-    return null;
-  }
+  void build() {}
 
-  Future<void> findMatch() async {
-    state = BattleMatch(id: '', opponentName: '', status: BattleStatus.searching);
-    final match = await mockSocialService.findMatch();
-    state = match;
-    _startOpponentSimulation();
-  }
+  Future<void> checkGameState(String battleId, BattleSession session, String currentUserId) async {
+    // Only Host runs game logic
+    if (session.creatorId != currentUserId) return;
+    if (session.status != BattleStatus.inProgress) return;
 
-  void _startOpponentSimulation() {
-    _opponentTimer?.cancel();
-    _opponentTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (state == null || state!.status != BattleStatus.playing) {
-        timer.cancel();
-        return;
+    // 1. Check Timer
+    final now = DateTime.now();
+    final startTime = session.startTime ?? now;
+    final elapsed = now.difference(startTime).inSeconds;
+    
+    // 2. Check if everyone answered
+    final allAnswered = session.players.every((p) => p.hasAnswered);
+    
+    if (elapsed >= session.timePerQuestion || allAnswered) {
+      // Move to next question or end game
+      if (session.currentQuestionIndex < session.questions.length - 1) {
+        await ref.read(battleRepositoryProvider).nextQuestion(battleId, session.currentQuestionIndex + 1);
+      } else {
+        await ref.read(battleRepositoryProvider).endGame(battleId);
       }
-
-      // Opponent has 60% chance to answer correctly
-      if (_random.nextDouble() > 0.4) {
-        state = state!.copyWith(opponentScore: state!.opponentScore + 1);
-      }
-    });
-  }
-
-  void incrementMyScore() {
-    if (state != null) {
-      state = state!.copyWith(myScore: state!.myScore + 1);
-    }
-  }
-
-  void endBattle() {
-    _opponentTimer?.cancel();
-    if (state != null) {
-      state = state!.copyWith(status: BattleStatus.finished);
+    } else {
+      // Simulate bots if game is still running
+      await ref.read(battleRepositoryProvider).simulateBotAnswers(battleId);
     }
   }
 }

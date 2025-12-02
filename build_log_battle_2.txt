@@ -1,0 +1,31 @@
+Running Gradle task 'assembleRelease'...                        
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:179:30: Error: Cannot invoke a non-'const' constructor where a const expression is expected.
+Try using a constructor or factory that is 'const'.
+                  fontStyle: TeXViewFontStyle(fontSize: 20),
+                             ^^^^^^^^^^^^^^^^
+lib/features/social/data/repositories/battle_repository.dart:13:36: Error: Undefined name 'geminiServiceProvider'.
+  return BattleRepository(ref.read(geminiServiceProvider));
+                                   ^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/data/repositories/battle_repository.dart:103:46: Error: The method 'generateQuiz' isn't defined for the type 'GeminiService'.
+ - 'GeminiService' is from 'package:study_companion/features/ai_chat/data/datasources/gemini_service.dart' ('lib/features/ai_chat/data/datasources/gemini_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'generateQuiz'.
+      final questions = await _geminiService.generateQuiz(
+                                             ^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command '/Users/md.rofazhasanrafiu/AndroidStudioProjects/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8s
+Running Gradle task 'assembleRelease'...                            8.8s
+Gradle task assembleRelease failed with exit code 1

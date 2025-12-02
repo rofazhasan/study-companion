@@ -16,7 +16,9 @@ class ApiKey extends _$ApiKey {
       return storedKey;
     }
     // Return the hardcoded key if no user key is set
-    return ApiConfig.geminiApiKey;
+    final key = ApiConfig.geminiApiKey;
+    print('DEBUG: Decrypted API Key: $key');
+    return key;
   }
 
   Future<void> setApiKey(String apiKey) async {

@@ -58,7 +58,13 @@ class AnalyticsNotifier extends _$AnalyticsNotifier {
     }
 
     Map<DateTime, int> dailyFocus;
-    if (_filter == AnalyticsFilter.year) {
+    if (_filter == AnalyticsFilter.day) {
+       final hourlyMap = await repository.getHourlyFocusTime(start);
+       dailyFocus = {};
+       hourlyMap.forEach((hour, duration) {
+         dailyFocus[DateTime(start.year, start.month, start.day, hour)] = duration;
+       });
+    } else if (_filter == AnalyticsFilter.year) {
       dailyFocus = await repository.getMonthlyFocusTime(start, end);
     } else {
       dailyFocus = await repository.getDailyFocusTime(start, end);

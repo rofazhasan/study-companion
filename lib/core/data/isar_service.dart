@@ -18,6 +18,8 @@ import '../../features/routine/data/models/habit.dart';
 import '../../features/routine/data/models/mission.dart';
 import '../../features/settings/data/models/user.dart';
 import '../../features/routine/data/models/exam.dart';
+import '../../features/social/data/models/social_models.dart';
+import '../../features/social/data/models/battle_history.dart';
 
 part 'isar_service.g.dart';
 
@@ -57,6 +59,9 @@ class IsarService {
         ExamSchema,
         SavedExamSchema,
         ClassRoutineSchema,
+        StudyGroupSchema,
+        SocialChatMessageSchema,
+        BattleHistorySchema,
       ],
       directory: dir.path,
     );
@@ -315,6 +320,12 @@ class IsarService {
     });
   }
 
+  Future<void> clearUser() async {
+    await _isar.writeTxn(() async {
+      await _isar.users.clear();
+    });
+  }
+
   // Class Routine
   Future<void> saveClassRoutine(ClassRoutine routine) async {
     await _isar.writeTxn(() async {
@@ -346,5 +357,16 @@ class IsarService {
     await _isar.writeTxn(() async {
       await _isar.classRoutines.delete(id);
     });
+  }
+
+  // Battle History
+  Future<void> saveBattleHistory(BattleHistory history) async {
+    await _isar.writeTxn(() async {
+      await _isar.battleHistorys.put(history);
+    });
+  }
+
+  Future<List<BattleHistory>> getBattleHistory() async {
+    return await _isar.battleHistorys.where().sortByDateDesc().findAll();
   }
 }

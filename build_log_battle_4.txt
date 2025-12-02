@@ -1,0 +1,23 @@
+Running Gradle task 'assembleRelease'...                        
+Incorrect package="io.adaptant.labs.flutter_windowmanager" found in source AndroidManifest.xml: /Users/md.rofazhasanrafiu/.pub-cache/hosted/pub.dev/flutter_windowmanager-0.2.0/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported.
+Recommendation: remove package="io.adaptant.labs.flutter_windowmanager" from the source AndroidManifest.xml: /Users/md.rofazhasanrafiu/.pub-cache/hosted/pub.dev/flutter_windowmanager-0.2.0/android/src/main/AndroidManifest.xml.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':flutter_windowmanager:processReleaseManifest'.
+> A failure occurred while executing com.android.build.gradle.tasks.ProcessLibraryManifest$ProcessLibWorkAction
+   > Incorrect package="io.adaptant.labs.flutter_windowmanager" found in source AndroidManifest.xml: /Users/md.rofazhasanrafiu/.pub-cache/hosted/pub.dev/flutter_windowmanager-0.2.0/android/src/main/AndroidManifest.xml.
+     Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported.
+     Recommendation: remove package="io.adaptant.labs.flutter_windowmanager" from the source AndroidManifest.xml: /Users/md.rofazhasanrafiu/.pub-cache/hosted/pub.dev/flutter_windowmanager-0.2.0/android/src/main/AndroidManifest.xml.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3s
+Running Gradle task 'assembleRelease'...                            3.9s
+Gradle task assembleRelease failed with exit code 1

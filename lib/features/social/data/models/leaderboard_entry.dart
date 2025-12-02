@@ -2,9 +2,10 @@ class LeaderboardEntry {
   final String userId;
   final String username;
   final String avatarUrl; // Optional, can use Initials
-  final int weeklyHours;
+  final double weeklyHours;
   final int streak;
   final int rank;
+  final int score;
 
   LeaderboardEntry({
     required this.userId,
@@ -13,5 +14,6 @@ class LeaderboardEntry {
     required this.weeklyHours,
     required this.streak,
     required this.rank,
+    this.score = 0,
   });
 }

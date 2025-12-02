@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'ai_service.dart';
+import '../../../learning/data/models/quiz_question.dart';
 
 class GeminiService implements AIService {
   late final GenerativeModel _model;
@@ -41,5 +43,74 @@ class GeminiService implements AIService {
         yield "Error generating response: $e";
       }
     }
+  }
+
+  @override
+  Future<List<QuizQuestion>> generateQuiz({
+    required String topic,
+    required String difficulty,
+    required String language,
+    required int count,
+  }) async {
+    if (apiKey.isEmpty) throw Exception('API Key not set');
+
+    final prompt = '''
+    Generate $count multiple-choice questions on "$topic" (Difficulty: $difficulty) in $language.
+    Format the output as a JSON list of objects.
+    Each object must have:
+    - "question": The question text (use LaTeX for math).
+    - "options": A list of 4 string options.
+    - "correctIndex": The integer index (0-3) of the correct option.
+    - "explanation": A brief explanation of the answer.
+    
+    IMPORTANT: Escape all backslashes in the JSON string. For example, use "\\\\int" instead of "\\int", and "\\\\," instead of "\\,".
+    Do not include markdown code blocks (```json). Just the raw JSON array.
+    ''';
+
+    int attempts = 0;
+    while (attempts < 3) {
+      try {
+        attempts++;
+        final content = [Content.text(prompt)];
+        final response = await _model.generateContent(content);
+        var text = response.text?.replaceAll('```json', '').replaceAll('```', '').trim() ?? '[]';
+        
+        // Aggressive sanitization
+        text = _sanitizeJson(text);
+        
+        final List<dynamic> jsonList = jsonDecode(text);
+        return jsonList.map((json) => QuizQuestion.fromJson(json)).toList();
+      } catch (e) {
+        print('Gemini Quiz Error (Attempt $attempts): $e');
+        if (attempts == 3) return [];
+        await Future.delayed(const Duration(seconds: 1)); // Wait before retry
+      }
+    }
+    return [];
+  }
+
+  String _sanitizeJson(String text) {
+    // Robust Sanitization:
+    // 1. Match valid double backslashes (\\) and preserve them.
+    // 2. Match invalid single backslashes (not followed by valid escape chars) and double them.
+    
+    // Pattern:
+    // Group 1: \\\\ (matches \\)
+    // Group 2: \\ (matches \) followed by negative lookahead for valid escapes
+    // Valid escapes: / " \ b f n r t uXXXX
+    // Note: u is only valid if followed by 4 hex digits.
+    
+    final regex = RegExp(r'(\\\\)|(\\)(?![/\\bfnrt"]|u[0-9a-fA-F]{4})');
+    
+    String sanitized = text.replaceAllMapped(regex, (match) {
+      if (match.group(1) != null) {
+        // Matched valid double backslash, keep it
+        return r'\\';
+      }
+      // Matched invalid single backslash, double it
+      return r'\\';
+    });
+    
+    return sanitized;
   }
 }

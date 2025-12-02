@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../widgets/contribution_heatmap.dart';
 import '../providers/analytics_provider.dart';
 import '../../../focus_mode/data/models/study_session.dart';
 import '../../../settings/presentation/providers/user_provider.dart';
@@ -393,6 +394,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
   Widget _buildChart(BuildContext context, Map<String, dynamic> data) {
     final dailyFocus = data['dailyFocus'] as Map<DateTime, int>;
+    final start = data['start'] as DateTime;
+    final end = data['end'] as DateTime;
     final filter = data['filter'] as AnalyticsFilter;
 
     if (dailyFocus.isEmpty) {
@@ -408,8 +411,20 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       );
     }
 
-    // For now, use bar chart for all filters
-    return _buildBarChart(context, dailyFocus, filter);
+    // Use BarChart for Day and Week views
+    if (filter == AnalyticsFilter.day || filter == AnalyticsFilter.week) {
+      return _buildBarChart(context, dailyFocus, filter);
+    }
+
+    // Use Heatmap for Month, Year, and Custom views
+    return Center(
+      child: ContributionHeatmap(
+        data: dailyFocus,
+        startDate: start,
+        endDate: end,
+        baseColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
   }
 
   Widget _buildBarChart(BuildContext context, Map<DateTime, int> dailyFocus, AnalyticsFilter filter) {
@@ -429,13 +444,20 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           barRods: [
             BarChartRodData(
               toY: hours,
-              color: Theme.of(context).colorScheme.primary,
-              width: 16,
-              borderRadius: BorderRadius.circular(4),
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.tertiary,
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+              width: 18,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
               backDrawRodData: BackgroundBarChartRodData(
                 show: true,
                 toY: (maxHours < 1 ? 1 : maxHours) * 1.2,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
               ),
             ),
           ],
@@ -454,8 +476,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               getTooltipColor: (_) => Theme.of(context).colorScheme.inverseSurface,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final date = sortedDates[groupIndex];
+                String label;
+                if (filter == AnalyticsFilter.day) {
+                   label = DateFormat('h a').format(date);
+                } else {
+                   label = DateFormat('MMM d').format(date);
+                }
                 return BarTooltipItem(
-                  '${DateFormat('MMM d').format(date)}\n${rod.toY.toStringAsFixed(1)} hrs',
+                  '$label\n${rod.toY.toStringAsFixed(1)} hrs',
                   TextStyle(color: Theme.of(context).colorScheme.onInverseSurface),
                 );
               },
@@ -471,29 +499,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     return const SizedBox();
                   }
                   
-                  // Logic to skip labels if too many
-                  // For month view (approx 30 days), show every 5th day
-                  // For year view (12 months), show all
-                  // For week view (7 days), show all
-                  
-                  bool showLabel = true;
-                  if (sortedDates.length > 14) {
-                    // Show first, last, and every 5th in between
-                    if (value.toInt() != 0 && 
-                        value.toInt() != sortedDates.length - 1 && 
-                        value.toInt() % 5 != 0) {
-                      showLabel = false;
-                    }
-                  }
-
-                  if (!showLabel) return const SizedBox();
-
                   final date = sortedDates[value.toInt()];
                   String label;
-                  if (filter == AnalyticsFilter.year) {
-                    label = DateFormat('MMM').format(date);
+                  if (filter == AnalyticsFilter.day) {
+                    // Show every 4th hour label to avoid crowding
+                    if (value.toInt() % 4 != 0) return const SizedBox();
+                    label = DateFormat('h a').format(date);
                   } else {
-                    label = DateFormat('d').format(date);
+                    label = DateFormat('E').format(date); // Mon, Tue...
                   }
                   
                   return Padding(

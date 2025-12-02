@@ -1,0 +1,162 @@
+Running Gradle task 'assembleRelease'...                        
+lib/features/social/presentation/screens/social_screen.dart:9:8: Error: Error when reading 'lib/features/social/features/settings/presentation/providers/user_provider.dart': No such file or directory
+import '../../features/settings/presentation/providers/user_provider.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:7:8: Error: Error when reading 'lib/features/social/presentation/data/models/battle_models.dart': No such file or directory
+import '../../data/models/battle_models.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:9:8: Error: Error when reading 'lib/features/social/presentation/data/models/battle_models.dart': No such file or directory
+import '../../data/models/battle_models.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_result_screen.dart:6:8: Error: Error when reading 'lib/features/social/presentation/data/models/battle_models.dart': No such file or directory
+import '../../data/models/battle_models.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:8:8: Error: Error when reading 'lib/features/social/presentation/data/repositories/battle_repository.dart': No such file or directory
+import '../../data/repositories/battle_repository.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:10:8: Error: Error when reading 'lib/features/social/presentation/data/repositories/battle_repository.dart': No such file or directory
+import '../../data/repositories/battle_repository.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:9:8: Error: Error when reading 'lib/features/social/presentation/screens/providers/battle_provider.dart': No such file or directory
+import '../providers/battle_provider.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:11:8: Error: Error when reading 'lib/features/social/presentation/screens/providers/battle_provider.dart': No such file or directory
+import '../providers/battle_provider.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_result_screen.dart:7:8: Error: Error when reading 'lib/features/social/presentation/screens/providers/battle_provider.dart': No such file or directory
+import '../providers/battle_provider.dart';
+       ^
+lib/features/social/data/repositories/battle_repository.dart:7:8: Error: Error when reading 'lib/core/services/gemini_service.dart': No such file or directory
+import '../../../../core/services/gemini_service.dart';
+       ^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:140:27: Error: Type 'BattlePlayer' not found.
+  Widget _buildPlayerCard(BattlePlayer player) {
+                          ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:141:27: Error: Type 'BattleSession' not found.
+  Widget _buildScoreBadge(BattleSession session, String? userId) {
+                          ^^^^^^^^^^^^^
+lib/features/social/data/repositories/battle_repository.dart:18:9: Error: Type 'GeminiService' not found.
+  final GeminiService _geminiService;
+        ^^^^^^^^^^^^^
+lib/features/social/presentation/screens/social_screen.dart:326:39: Error: The getter 'userNotifierProvider' isn't defined for the type 'SocialScreen'.
+ - 'SocialScreen' is from 'package:study_companion/features/social/presentation/screens/social_screen.dart' ('lib/features/social/presentation/screens/social_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'userNotifierProvider'.
+                final name = ref.read(userNotifierProvider).value?.name ?? 'Host';
+                                      ^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/social_screen.dart:380:37: Error: The getter 'userNotifierProvider' isn't defined for the type 'SocialScreen'.
+ - 'SocialScreen' is from 'package:study_companion/features/social/presentation/screens/social_screen.dart' ('lib/features/social/presentation/screens/social_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'userNotifierProvider'.
+              final name = ref.read(userNotifierProvider).value?.name ?? 'Player';
+                                    ^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:23:36: Error: The method 'battleControllerProvider' isn't defined for the type '_BattleLobbyScreenState'.
+ - '_BattleLobbyScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_lobby_screen.dart' ('lib/features/social/presentation/screens/battle/battle_lobby_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'battleControllerProvider'.
+    final sessionAsync = ref.watch(battleControllerProvider(widget.battleId));
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:39:33: Error: The getter 'BattleStatus' isn't defined for the type '_BattleLobbyScreenState'.
+ - '_BattleLobbyScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_lobby_screen.dart' ('lib/features/social/presentation/screens/battle/battle_lobby_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'BattleStatus'.
+          if (session.status == BattleStatus.inProgress) {
+                                ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:115:52: Error: The getter 'BattleStatus' isn't defined for the type '_BattleLobbyScreenState'.
+ - '_BattleLobbyScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_lobby_screen.dart' ('lib/features/social/presentation/screens/battle/battle_lobby_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'BattleStatus'.
+                      onPressed: session.status == BattleStatus.starting 
+                                                   ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:123:48: Error: The getter 'BattleStatus' isn't defined for the type '_BattleLobbyScreenState'.
+ - '_BattleLobbyScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_lobby_screen.dart' ('lib/features/social/presentation/screens/battle/battle_lobby_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'BattleStatus'.
+                      child: session.status == BattleStatus.starting
+                                               ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:140:27: Error: 'BattlePlayer' isn't a type.
+  Widget _buildPlayerCard(BattlePlayer player) {
+                          ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_lobby_screen.dart:166:22: Error: The getter 'battleRepositoryProvider' isn't defined for the type '_BattleLobbyScreenState'.
+ - '_BattleLobbyScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_lobby_screen.dart' ('lib/features/social/presentation/screens/battle/battle_lobby_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'battleRepositoryProvider'.
+      await ref.read(battleRepositoryProvider).startBattle(battleId);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:54:36: Error: The method 'battleControllerProvider' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'battleControllerProvider'.
+    final sessionAsync = ref.watch(battleControllerProvider(widget.battleId));
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:63:33: Error: The getter 'BattleStatus' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'BattleStatus'.
+          if (session.status == BattleStatus.completed) {
+                                ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:73:24: Error: The method 'battleControllerProvider' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'battleControllerProvider'.
+              ref.read(battleControllerProvider(widget.battleId).notifier).checkGameState(session);
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:141:27: Error: 'BattleSession' isn't a type.
+  Widget _buildScoreBadge(BattleSession session, String? userId) {
+                          ^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:142:84: Error: The method 'BattlePlayer' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'BattlePlayer'.
+    final me = session.players.firstWhere((p) => p.userId == userId, orElse: () => BattlePlayer(userId: '', name: ''));
+                                                                                   ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:179:30: Error: Cannot invoke a non-'const' constructor where a const expression is expected.
+Try using a constructor or factory that is 'const'.
+                  fontStyle: TeXViewFontStyle(fontSize: 20),
+                             ^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:161:37: Error: The method 'currentQuestionProvider' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'currentQuestionProvider'.
+    final questionAsync = ref.watch(currentQuestionProvider(battleId, index));
+                                    ^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:194:37: Error: The method 'currentQuestionProvider' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'currentQuestionProvider'.
+    final questionAsync = ref.watch(currentQuestionProvider(battleId, index));
+                                    ^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_arena_screen.dart:254:20: Error: The getter 'battleRepositoryProvider' isn't defined for the type '_BattleArenaScreenState'.
+ - '_BattleArenaScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_arena_screen.dart' ('lib/features/social/presentation/screens/battle/battle_arena_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'battleRepositoryProvider'.
+    await ref.read(battleRepositoryProvider).submitAnswer(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_result_screen.dart:45:32: Error: 'BattlePlayer' isn't a type.
+          final players = List<BattlePlayer>.from(session.players)
+                               ^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_result_screen.dart:36:36: Error: The method 'battleControllerProvider' isn't defined for the type '_BattleResultScreenState'.
+ - '_BattleResultScreenState' is from 'package:study_companion/features/social/presentation/screens/battle/battle_result_screen.dart' ('lib/features/social/presentation/screens/battle/battle_result_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'battleControllerProvider'.
+    final sessionAsync = ref.watch(battleControllerProvider(widget.battleId));
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/presentation/screens/battle/battle_result_screen.dart:46:32: Error: The getter 'score' isn't defined for the type 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'score'.
+            ..sort((a, b) => b.score.compareTo(a.score));
+                               ^^^^^
+lib/features/social/presentation/screens/battle/battle_result_screen.dart:46:50: Error: The getter 'score' isn't defined for the type 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'score'.
+            ..sort((a, b) => b.score.compareTo(a.score));
+                                                 ^^^^^
+lib/features/social/data/repositories/battle_repository.dart:13:36: Error: Undefined name 'geminiServiceProvider'.
+  return BattleRepository(ref.read(geminiServiceProvider));
+                                   ^^^^^^^^^^^^^^^^^^^^^
+lib/features/social/data/repositories/battle_repository.dart:18:9: Error: 'GeminiService' isn't a type.
+  final GeminiService _geminiService;
+        ^^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command '/Users/md.rofazhasanrafiu/AndroidStudioProjects/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9s
+Running Gradle task 'assembleRelease'...                            9.2s
+Gradle task assembleRelease failed with exit code 1

@@ -156,6 +156,7 @@ class _AddExamDialogState extends ConsumerState<AddExamDialog> {
                   final alarmTime = subject.dateTime.subtract(const Duration(days: 1));
                   if (alarmTime.isAfter(DateTime.now())) {
                     await notificationService.scheduleExamAlarm(
+                      id: subject.hashCode,
                       title: 'Upcoming Exam: ${subject.subjectName}',
                       body: 'Tomorrow at ${DateFormat('h:mm a').format(subject.dateTime)}. Get ready!',
                       scheduledDate: alarmTime,
