@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:confetti/confetti.dart';
 import 'package:study_companion/core/data/isar_service.dart';
@@ -215,21 +216,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       ),
                     ],
                   ),
-                  child: Text(
-                    question.question,
-                    style: (quizState?.language == 'Bangla' 
-                        ? GoogleFonts.notoSerifBengali(
-                            textStyle: Theme.of(context).textTheme.headlineSmall,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                          )
-                        : Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                          )),
-                    textAlign: TextAlign.center,
+                  child: Center(
+                    child: _buildQuestionContent(
+                      question.question,
+                      fontSize: 20,
+                      textAlign: TextAlign.center,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 const Gap(32),
@@ -272,19 +265,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
+                                child: _buildQuestionContent(
                                   question.options[index],
-                                  style: (quizState?.language == 'Bangla'
-                                      ? GoogleFonts.notoSerifBengali(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                        )
-                                      : const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                        )),
+                                  fontSize: 16,
+                                  color: Colors.white,
                                 ),
                               ),
                               if (icon != null) ...[
@@ -320,9 +304,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                           ],
                         ),
                         const Gap(8),
-                        Text(
+                        _buildQuestionContent(
                           question.explanation,
-                          style: const TextStyle(color: Colors.white70),
+                          fontSize: 14,
+                          color: Colors.white70,
                         ),
                       ],
                     ),
@@ -349,4 +334,38 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       ),
     );
   }
+
+  Widget _buildQuestionContent(String text, {double fontSize = 18, Color color = Colors.white, TextAlign textAlign = TextAlign.start}) {
+    List<Widget> spans = [];
+    final regex = RegExp(r'\$(.*?)\$');
+    int lastMatchEnd = 0;
+
+    for (final match in regex.allMatches(text)) {
+      if (match.start > lastMatchEnd) {
+        spans.add(Text(
+          text.substring(lastMatchEnd, match.start),
+          style: TextStyle(fontSize: fontSize, color: color),
+        ));
+      }
+      spans.add(Math.tex(
+        match.group(1)!,
+        textStyle: TextStyle(fontSize: fontSize, color: color),
+      ));
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      spans.add(Text(
+        text.substring(lastMatchEnd),
+        style: TextStyle(fontSize: fontSize, color: color),
+      ));
+    }
+
+    return Wrap(
+      alignment: textAlign == TextAlign.center ? WrapAlignment.center : WrapAlignment.start,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: spans,
+    );
+  }
 }
+

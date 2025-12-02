@@ -143,7 +143,13 @@ class _BattleResultScreenState extends ConsumerState<BattleResultScreen> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text('Q${qIndex + 1}: ${q.question}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Q${qIndex + 1}: ', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                  Expanded(child: _buildQuestionContent(q.question, fontSize: 12)),
+                                                ],
+                                              ),
                                               if (!isCorrect)
                                                 Row(
                                                   children: [
