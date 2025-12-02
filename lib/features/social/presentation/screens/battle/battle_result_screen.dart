@@ -31,8 +31,18 @@ class _BattleResultScreenState extends ConsumerState<BattleResultScreen> {
     if (_historySaved) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await ref.read(battleRepositoryProvider).saveLocalHistory(widget.battleId, user.uid);
-      setState(() => _historySaved = true);
+      // Get the current session from the provider
+      final session = ref.read(battleSessionProvider(widget.battleId)).value;
+      if (session != null) {
+        await ref.read(battleRepositoryProvider).saveLocalHistory(
+          widget.battleId, 
+          user.uid,
+          session: session,
+        );
+        if (mounted) {
+          setState(() => _historySaved = true);
+        }
+      }
     }
   }
 

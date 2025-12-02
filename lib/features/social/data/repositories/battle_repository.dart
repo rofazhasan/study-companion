@@ -178,36 +178,49 @@ class BattleRepository {
     await _firestore.collection('battles').doc(battleId).update({
       'status': BattleStatus.completed.name,
     });
-    // Auto-delete removed. Host must manually delete.
+    
+    // Auto-delete after 1 minute to allow for history saving and debrief
+    Future.delayed(const Duration(minutes: 1), () async {
+      try {
+        await deleteBattle(battleId);
+        print('Battle $battleId auto-deleted from cloud.');
+      } catch (e) {
+        print('Error auto-deleting battle: $e');
+      }
+    });
   }
 
   Future<void> deleteBattle(String battleId) async {
     await _firestore.collection('battles').doc(battleId).delete();
   }
 
-  Future<void> saveLocalHistory(String battleId, String userId) async {
+  Future<void> saveLocalHistory(String battleId, String userId, {BattleSession? session}) async {
     try {
-      final doc = await _firestore.collection('battles').doc(battleId).get();
-      if (!doc.exists) return;
+      BattleSession? battleSession = session;
       
-      final session = BattleSession.fromMap(doc.data()!);
-      final player = session.players.firstWhere((p) => p.userId == userId, orElse: () => BattlePlayer(userId: '', name: ''));
+      if (battleSession == null) {
+        final doc = await _firestore.collection('battles').doc(battleId).get();
+        if (!doc.exists) return;
+        battleSession = BattleSession.fromMap(doc.data()!);
+      }
+      
+      final player = battleSession.players.firstWhere((p) => p.userId == userId, orElse: () => BattlePlayer(userId: '', name: ''));
       
       if (player.userId.isEmpty) return;
       
       // Calculate Rank
-      final players = List.from(session.players)..sort((a, b) => b.score.compareTo(a.score));
+      final players = List.from(battleSession.players)..sort((a, b) => b.score.compareTo(a.score));
       final rank = players.indexWhere((p) => p.userId == userId) + 1;
       
       final history = BattleHistory()
         ..battleId = battleId
-        ..topic = session.topic
+        ..topic = battleSession.topic
         ..date = DateTime.now()
         ..score = player.score
         ..rank = rank
-        ..totalPlayers = session.players.length
+        ..totalPlayers = battleSession.players.length
         ..isWinner = rank == 1
-        ..sessionJson = jsonEncode(session.toMap());
+        ..sessionJson = jsonEncode(battleSession.toMap());
         
       await _isarService.saveBattleHistory(history);
     } catch (e) {

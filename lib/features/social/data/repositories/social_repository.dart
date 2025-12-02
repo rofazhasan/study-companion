@@ -390,12 +390,24 @@ class SocialRepository {
            }
 
            // Check for deletion condition (Ephemeral logic part 2)
-           final groupDoc = await _firestore.collection('groups').doc(groupId).get();
-           final allMembers = List<String>.from(groupDoc.data()?['memberIds'] ?? []);
+           // Optimization: Use memberCount from local group if available to avoid Firestore read
+           // But for safety, we'll read the group doc occasionally or rely on the fact that we are syncing groups too.
            
-           // If all members read it, delete from Firestore
-           if (readBy.length >= allMembers.length) {
-              await _firestore.collection('groups').doc(groupId).collection('messages').doc(change.doc.id).delete();
+           try {
+             final groupDoc = await _firestore.collection('groups').doc(groupId).get();
+             if (groupDoc.exists) {
+               final memberCount = groupDoc.data()?['memberCount'] as int? ?? 0;
+               final allMembers = List<String>.from(groupDoc.data()?['memberIds'] ?? []);
+               
+               // If all members read it, delete from Firestore
+               // We check both count and explicit IDs to be safe
+               if (readBy.length >= memberCount && readBy.length >= allMembers.length) {
+                  print('DEBUG: Deleting message $messageId as all ${readBy.length} members read it.');
+                  await _firestore.collection('groups').doc(groupId).collection('messages').doc(change.doc.id).delete();
+               }
+             }
+           } catch (e) {
+             print('Error checking deletion condition: $e');
            }
         }
       }
