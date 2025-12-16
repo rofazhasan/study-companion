@@ -5,6 +5,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/battle_provider.dart';
 import '../../../data/repositories/battle_repository.dart';
+import '../../../data/models/battle_models.dart';
 
 class BattleResultScreen extends ConsumerStatefulWidget {
   final String battleId;
@@ -63,8 +64,15 @@ class _BattleResultScreenState extends ConsumerState<BattleResultScreen> {
       body: sessionAsync.when(
         data: (session) {
           // Sort players
-          final players = List.from(session.players)
-            ..sort((a, b) => b.score.compareTo(a.score));
+          final players = List<BattlePlayer>.from(session.players);
+          players.sort((a, b) {
+              final scoreCompare = b.score.compareTo(a.score);
+              if (scoreCompare != 0) return scoreCompare;
+              
+              final timeA = a.answerTimes.values.fold(0.0, (sum, t) => sum + t);
+              final timeB = b.answerTimes.values.fold(0.0, (sum, t) => sum + t);
+              return timeA.compareTo(timeB);
+          });
           final winner = players.first;
           final isHost = session.creatorId == user?.uid;
           
@@ -87,10 +95,15 @@ class _BattleResultScreenState extends ConsumerState<BattleResultScreen> {
                       Text(
                         'WINNER: ${winner.name.toUpperCase()}',
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5),
+                        textAlign: TextAlign.center,
+                      ),
+                       Text(
+                        '${winner.score} PTS',
+                        style: const TextStyle(fontSize: 18, color: Colors.amberAccent, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '${winner.score} POINTS',
-                        style: const TextStyle(fontSize: 18, color: Colors.amberAccent, fontWeight: FontWeight.bold),
+                        'Time: ${winner.answerTimes.values.fold(0.0, (a, b) => a + b).toStringAsFixed(1)}s',
+                        style: const TextStyle(fontSize: 14, color: Colors.amberAccent),
                       ),
                     ],
                   ),
@@ -105,6 +118,8 @@ class _BattleResultScreenState extends ConsumerState<BattleResultScreen> {
                     itemCount: players.length,
                     itemBuilder: (context, index) {
                       final player = players[index];
+                      final totalTime = player.answerTimes.values.fold(0.0, (a, b) => a + b);
+                      
                       return ExpansionTile(
                         collapsedBackgroundColor: Colors.white.withOpacity(0.05),
                         backgroundColor: Colors.white.withOpacity(0.08),
@@ -121,7 +136,14 @@ class _BattleResultScreenState extends ConsumerState<BattleResultScreen> {
                             ],
                           ),
                         ),
-                        trailing: Text('${player.score} pts', style: const TextStyle(color: Colors.cyanAccent, fontSize: 16)),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('${player.score} pts', style: const TextStyle(color: Colors.cyanAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('${totalTime.toStringAsFixed(1)}s', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                          ],
+                        ),
                         children: [
                           // Detailed Breakdown
                           Container(

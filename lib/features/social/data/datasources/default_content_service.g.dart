@@ -1,25 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'battle_repository.dart';
+part of 'default_content_service.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$battleRepositoryHash() => r'ecba06c011938a5802108bfd1bc6ae471154a31b';
+String _$defaultContentServiceHash() =>
+    r'22bc0cec8f97e63258f274de0d8f6c4245733079';
 
-/// See also [battleRepository].
-@ProviderFor(battleRepository)
-final battleRepositoryProvider = Provider<BattleRepository>.internal(
-  battleRepository,
-  name: r'battleRepositoryProvider',
+/// See also [defaultContentService].
+@ProviderFor(defaultContentService)
+final defaultContentServiceProvider = Provider<DefaultContentService>.internal(
+  defaultContentService,
+  name: r'defaultContentServiceProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$battleRepositoryHash,
+      : _$defaultContentServiceHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef BattleRepositoryRef = ProviderRef<BattleRepository>;
+typedef DefaultContentServiceRef = ProviderRef<DefaultContentService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

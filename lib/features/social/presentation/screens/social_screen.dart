@@ -7,7 +7,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/social_provider.dart';
 import '../../data/repositories/social_repository.dart';
 import '../../data/repositories/battle_repository.dart';
+import '../../data/datasources/default_content_service.dart';
 import '../../../settings/presentation/providers/user_provider.dart';
+
+import 'create_battle_dialog.dart';
 
 class SocialScreen extends ConsumerWidget {
   const SocialScreen({super.key});
@@ -271,101 +274,9 @@ class SocialScreen extends ConsumerWidget {
   }
 
   void _showCreateBattleDialog(BuildContext context, WidgetRef ref) {
-    final topicController = TextEditingController();
-    final countController = TextEditingController(text: '5');
-    final timeController = TextEditingController(text: '30');
-    String language = 'English';
-
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Create Battle'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: topicController,
-                  decoration: const InputDecoration(labelText: 'Topic (e.g. Math, History)'),
-                ),
-                const Gap(16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: countController,
-                        decoration: const InputDecoration(labelText: 'Questions'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const Gap(16),
-                    Expanded(
-                      child: TextField(
-                        controller: timeController,
-                        decoration: const InputDecoration(labelText: 'Sec/Q'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                  ],
-                ),
-                const Gap(16),
-                DropdownButtonFormField<String>(
-                  value: language,
-                  decoration: const InputDecoration(labelText: 'Language'),
-                  items: ['English', 'Spanish', 'French', 'German', 'Bengali'].map((l) {
-                    return DropdownMenuItem(value: l, child: Text(l));
-                  }).toList(),
-                  onChanged: (v) => setState(() => language = v!),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (topicController.text.isEmpty) return;
-                
-                final user = FirebaseAuth.instance.currentUser;
-                if (user == null) return;
-                
-                // Fetch user name
-                String name = ref.read(userNotifierProvider).value?.name ?? '';
-                if (name.isEmpty) {
-                  // Fallback: Fetch from Firestore directly
-                  final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-                  name = userDoc.data()?['name'] ?? 'Unknown Host';
-                }
-
-                try {
-                  final battleId = await ref.read(battleRepositoryProvider).createBattle(
-                    creatorId: user.uid,
-                    creatorName: name,
-                    topic: topicController.text,
-                    language: language,
-                    questionCount: int.tryParse(countController.text) ?? 5,
-                    timePerQuestion: int.tryParse(timeController.text) ?? 30,
-                  );
-                  
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    context.push('/social/battle/$battleId/lobby');
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
+      builder: (context) => const CreateBattleDialog(),
     );
   }
 

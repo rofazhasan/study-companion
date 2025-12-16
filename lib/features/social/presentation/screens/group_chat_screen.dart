@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:swipe_to/swipe_to.dart';
 import '../../data/models/social_models.dart';
 import '../../data/repositories/social_repository.dart';
@@ -27,14 +28,19 @@ class GroupChatScreen extends ConsumerStatefulWidget {
 
 class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
   final _messageController = TextEditingController();
-  final _scrollController = ScrollController();
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  
   String? _currentUserId;
   
   // Reply State
   SocialChatMessage? _replyingTo;
+  String? _highlightedMessageId; // New state for highlighting
 
   // Typing State
   Timer? _typingTimer;
+  Timer? _highlightTimer; // Timer to clear highlight
+
   bool _isTyping = false;
   
   // Mention State
@@ -80,8 +86,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
     ref.read(socialRepositoryProvider).setActiveChat(null);
     _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
-    _scrollController.dispose();
     _typingTimer?.cancel();
+    _highlightTimer?.cancel();
     super.dispose();
   }
 
@@ -111,9 +117,6 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
       
       if (lastAt != -1) {
         final query = textBeforeCursor.substring(lastAt + 1);
-        // Check if there's a space after @, if so, stop searching unless it's part of a name we are typing?
-        // Simple logic: if query contains space, maybe stop. But names have spaces.
-        // Let's allow spaces for now but maybe limit length or check if we are still "in" a mention.
         
         setState(() {
           _mentionQuery = query.toLowerCase();
@@ -176,8 +179,6 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
       }
     }
 
-
-
     ref.read(socialRepositoryProvider).sendMessage(
       widget.groupId, 
       _currentUserId!, 
@@ -195,16 +196,43 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
       _showMentionList = false;
     });
     
-    // Scroll to bottom
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+    // Automatic scroll is handled by the list sticking to bottom usually
+  }
+
+  void _scrollToMessage(String messageId, List<SocialChatMessage> messages) {
+    final index = messages.indexWhere((m) => m.messageId == messageId);
+    print('DEBUG: ScrolToMessage: id=$messageId, index=$index of ${messages.length}');
+    
+    if (index != -1 && _itemScrollController.isAttached) {
+      _itemScrollController.scrollTo(
+        index: index,
+        duration: const Duration(milliseconds: 600), // Slower scroll to see it better
+        curve: Curves.easeInOut,
+        alignment: 0.3, 
+      );
+      
+      // Flash/Highlight logic
+      setState(() {
+        _highlightedMessageId = messageId;
+      });
+      print('DEBUG: Set highlight for $messageId'); // LOG
+      
+      _highlightTimer?.cancel();
+      _highlightTimer = Timer(const Duration(seconds: 3), () { // 3 seconds
+        if (mounted) {
+          setState(() {
+            _highlightedMessageId = null;
+          });
+          print('DEBUG: Cleared highlight'); // LOG
+        }
+      });
+      
+    } else {
+        print('DEBUG: Message not found or controller detached'); // LOG
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Message not found (might be too old)')),
         );
-      }
-    });
+    }
   }
 
   @override
@@ -306,15 +334,24 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                     ),
                   );
                 }
-                return ListView.builder(
-                  controller: _scrollController,
+                
+                return ScrollablePositionedList.builder(
+                  itemScrollController: _itemScrollController,
+                  itemPositionsListener: _itemPositionsListener,
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
+                  initialScrollIndex: messages.length - 1 < 0 ? 0 : messages.length - 1, 
+                  
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg.senderId == _currentUserId;
                     final showHeader = index == 0 || messages[index - 1].senderId != msg.senderId;
+                    final isHighlighted = msg.messageId == _highlightedMessageId;
                     
+                    if (isHighlighted) {
+                        print('DEBUG: Building Highlighted Row index=$index id=${msg.messageId}');
+                    }
+
                     return SwipeTo(
                       onRightSwipe: (details) {
                         setState(() {
@@ -325,12 +362,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                         message: msg, 
                         isMe: isMe,
                         showHeader: showHeader,
+                        isHighlighted: isHighlighted,
                         groupMemberCount: memberCount,
                         onReply: () {
                           setState(() {
                             _replyingTo = msg;
                           });
                         },
+                        onReplyTap: (replyId) => _scrollToMessage(replyId, messages),
                       ),
                     );
                   },
@@ -466,15 +505,19 @@ class _MessageBubble extends ConsumerWidget {
   final SocialChatMessage message;
   final bool isMe;
   final bool showHeader;
+  final bool isHighlighted;
   final int groupMemberCount;
   final VoidCallback onReply;
+  final Function(String replyId)? onReplyTap;
 
   const _MessageBubble({
     required this.message, 
     required this.isMe,
     required this.showHeader,
+    this.isHighlighted = false,
     required this.groupMemberCount,
     required this.onReply,
+    this.onReplyTap,
   });
 
   @override
@@ -482,7 +525,11 @@ class _MessageBubble extends ConsumerWidget {
     // Fetch real name if possible
     final nameFuture = ref.watch(socialRepositoryProvider).getMemberName(message.senderId);
 
-    return Column(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      color: isHighlighted ? Colors.yellow.withOpacity(0.5) : Colors.transparent, // STRONG YELLOW
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), // Slight padding for highlight
+      child: Column(
       crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         if (showHeader && !isMe)
@@ -510,35 +557,42 @@ class _MessageBubble extends ConsumerWidget {
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 if (message.replyToId != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border(left: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          message.replyToSenderName ?? 'Unknown',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                  GestureDetector(
+                    onTap: () {
+                      if (message.replyToId != null && onReplyTap != null) {
+                        onReplyTap!(message.replyToId!);
+                      }
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border(left: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            message.replyToSenderName ?? 'Unknown',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          message.replyToContent ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          Text(
+                            message.replyToContent ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 Container(
@@ -594,8 +648,9 @@ class _MessageBubble extends ConsumerWidget {
             ),
           ),
         ),
-      ],
-    );
+      ], // Column children
+      ), // Column
+    ); // AnimatedContainer
   }
 
   void _showReadByList(BuildContext context, WidgetRef ref, List<String> readByIds) {

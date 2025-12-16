@@ -53,7 +53,7 @@ class SubjectsScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          IconData(subject.iconCode, fontFamily: 'MaterialIcons'),
+                          _getSubjectIcon(subject.iconCode),
                           size: 48,
                           color: Color(subject.colorValue),
                         ),
@@ -139,6 +139,22 @@ class SubjectsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+  IconData _getSubjectIcon(int codePoint) {
+    const supportedIcons = [
+      Icons.book,
+      Icons.calculate,
+      Icons.science,
+      Icons.history_edu,
+      Icons.language,
+      Icons.computer,
+    ];
+    
+    try {
+      return supportedIcons.firstWhere((icon) => icon.codePoint == codePoint);
+    } catch (_) {
+      return Icons.class_outlined; // Default fallback
+    }
   }
 }
 

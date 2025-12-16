@@ -9,24 +9,27 @@ import '../../../ai_chat/data/datasources/ai_service.dart';
 import '../../../ai_chat/presentation/providers/chat_provider.dart';
 import '../../../../core/data/isar_service.dart';
 import '../models/battle_history.dart';
+import '../datasources/default_content_service.dart';
 
 part 'battle_repository.g.dart';
 
 @Riverpod(keepAlive: true)
-
-
-@Riverpod(keepAlive: true)
 BattleRepository battleRepository(BattleRepositoryRef ref) {
-  return BattleRepository(ref.watch(aiServiceProvider), ref.watch(isarServiceProvider));
+  return BattleRepository(
+      ref.watch(aiServiceProvider), 
+      ref.watch(isarServiceProvider),
+      ref.watch(defaultContentServiceProvider)
+  );
 }
 
 class BattleRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AIService _aiService;
   final IsarService _isarService;
+  final DefaultContentService _defaultContentService;
   final _uuid = const Uuid();
 
-  BattleRepository(this._aiService, this._isarService);
+  BattleRepository(this._aiService, this._isarService, this._defaultContentService);
 
   // --- 1. Create Battle (The "All-in-One" Method) ---
   Future<String> createBattle({
@@ -36,18 +39,61 @@ class BattleRepository {
     required String language,
     required int questionCount,
     required int timePerQuestion,
+    bool useDefaultData = false, // New optional parameter
   }) async {
     final battleId = _uuid.v4();
     final joinCode = (100000 + Random().nextInt(900000)).toString();
 
     // 1. Generate Questions FIRST (Blocking)
-    // This ensures we never have a battle without questions.
-    final questions = await _aiService.generateQuiz(
-      topic: topic,
-      difficulty: 'Medium',
-      language: language,
-      count: questionCount,
-    );
+    List<dynamic> questions = []; // Use dynamic to accommodate slightly different models if any
+    // Actually we mapped QuizQuestion in DefaultContentService to match AIService? 
+    // AIService returns List<QuizQuestion> (from ai_chat package)
+    // DefaultContentService returns List<QuizQuestion> (local definition... oops)
+    // We should probably reconcile them or map them to BattleQuestion immediately.
+
+    try {
+      if (useDefaultData) {
+        final localQuestions = await _defaultContentService.getQuestions(
+          topic: topic,
+          language: language,
+          count: questionCount,
+        );
+        questions = localQuestions;
+        
+        if (questions.isEmpty) {
+           throw Exception('No offline data found for $topic ($language). Please download data package first.');
+        }
+      } else {
+        // Try AI
+        try {
+          questions = await _aiService.generateQuiz(
+            topic: topic,
+            difficulty: 'Medium',
+            language: language,
+            count: questionCount,
+          );
+        } catch (e) {
+          print('AI Generation failed: $e');
+          // Fallback to default if AI fails?
+          // The user said "when also ai not working they can make battle using deafault data but it will be optional"
+          // We can try to fallback transparently OR just let it fail.
+          // Let's try fallback if default data is available.
+          if (await _defaultContentService.isDataAvailable()) {
+             print('Falling back to default content');
+             questions = await _defaultContentService.getQuestions(
+                topic: topic,
+                language: language,
+                count: questionCount,
+             );
+          } else {
+            rethrow;
+          }
+        }
+      }
+    } catch (e) {
+       // If explicit default usage failed or fallback failed
+       throw Exception('Failed to generate questions: $e');
+    }
 
     if (questions.isEmpty) {
       throw Exception('Failed to generate questions. Please try again.');
@@ -56,7 +102,7 @@ class BattleRepository {
     final battleQuestions = questions.map((q) => BattleQuestion(
       id: _uuid.v4(),
       question: q.question,
-      options: q.options,
+      options: List<String>.from(q.options),
       correctIndex: q.correctIndex,
       explanation: q.explanation,
     )).toList();
@@ -202,7 +248,17 @@ class BattleRepository {
       if (player.userId.isEmpty) return;
       
       // Calculate Rank
-      final players = List.from(battleSession.players)..sort((a, b) => b.score.compareTo(a.score));
+      final players = List<BattlePlayer>.from(battleSession.players);
+      players.sort((a, b) {
+          final scoreCompare = b.score.compareTo(a.score);
+          if (scoreCompare != 0) return scoreCompare;
+          
+          // Tie-breaker: Total Time ASC
+          final timeA = a.answerTimes.values.fold(0.0, (sum, t) => sum + t);
+          final timeB = b.answerTimes.values.fold(0.0, (sum, t) => sum + t);
+          return timeA.compareTo(timeB);
+      });
+      
       final rank = players.indexWhere((p) => p.userId == userId) + 1;
       
       final history = BattleHistory()
@@ -243,16 +299,20 @@ class BattleRepository {
 
       // Check correctness
       final question = session.questions[session.currentQuestionIndex];
-      final isCorrect = question.correctIndex == answerIndex;
+      final isTimeout = answerIndex == -1;
+      final isCorrect = !isTimeout && question.correctIndex == answerIndex;
+      
+      // Enforce full time penalty for timeout
+      final actualTimeTaken = isTimeout ? session.timePerQuestion.toDouble() : timeTaken;
       
       // Calculate Score
       int points = 0;
       if (isCorrect) {
         points = 10; // Base points
         // Speed bonus (Reduced to prevent unfair advantage)
-        final ratio = timeTaken / session.timePerQuestion;
-        if (ratio <= 0.2) points += 3; // Was 5
-        else if (ratio <= 0.5) points += 1; // Was 2
+        final ratio = actualTimeTaken / session.timePerQuestion;
+        if (ratio <= 0.2) points += 3;
+        else if (ratio <= 0.5) points += 1;
       }
 
       // Update Player
@@ -263,10 +323,10 @@ class BattleRepository {
         score: player.score + points,
         streak: isCorrect ? player.streak + 1 : 0,
         hasAnswered: true,
-        answerTime: timeTaken,
+        answerTime: actualTimeTaken,
         isBot: player.isBot,
-        answers: {...player.answers, question.id: answerIndex}, // Record Answer
-        answerTimes: {...player.answerTimes, question.id: timeTaken}, // Record Time
+        answers: {...player.answers, question.id: answerIndex}, // Record Answer (-1 for timeout)
+        answerTimes: {...player.answerTimes, question.id: actualTimeTaken}, // Record Time
       );
       
       // Update List

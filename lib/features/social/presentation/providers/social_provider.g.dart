@@ -581,7 +581,7 @@ final battleHistoryProvider =
 );
 
 typedef BattleHistoryRef = AutoDisposeFutureProviderRef<List<BattleHistory>>;
-String _$socialNotifierHash() => r'f2152fa62238605c07d522fe98de3d4a061f07a0';
+String _$socialNotifierHash() => r'ffdc2d72ea883d2316ef6a4807f31218b48be8a1';
 
 /// See also [SocialNotifier].
 @ProviderFor(SocialNotifier)
